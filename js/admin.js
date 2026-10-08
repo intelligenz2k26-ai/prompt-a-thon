@@ -129,23 +129,25 @@ class AdminController {
             if (!window.EscapeStorage || !window.EscapeStorage.isAdminLoggedIn()) return;
             isSyncing = true;
             try {
-                const prevList = window.EscapeStorage.getParticipants();
-                const prevCount = prevList.length;
+                const prevIds = new Set(window.EscapeStorage.getParticipants().map(p => p.id));
                 const fresh = await window.EscapeStorage.syncFromCloud();
-                const currentCount = (fresh || window.EscapeStorage.getParticipants()).length;
+                const currentList = fresh || window.EscapeStorage.getParticipants();
+                const currentCount = currentList.length;
 
                 if (syncBadge) {
                     syncBadge.innerHTML = `<span class="sync-dot" style="background:#00ff88; box-shadow:0 0 8px #00ff88;"></span><span>LIVE SYNC ACTIVE (${currentCount})</span>`;
                 }
 
-                if (fresh && fresh.length > prevCount) {
+                const newGuys = currentList.filter(p => !prevIds.has(p.id));
+                if (newGuys.length > 0) {
                     if (window.escapeSound) window.escapeSound.unlock();
-                    const newGuys = fresh.slice(prevCount);
                     const names = newGuys.map(p => `${p.name} (${p.id})`).join(', ');
                     this.showToast(`⚡ New Registration: ${names}!`, 'green');
+                    this.renderStats();
+                    this.renderCurrentView();
+                } else {
+                    this.renderStats();
                 }
-                this.renderStats();
-                this.renderCurrentView();
             } catch (err) {
                 if (syncBadge) {
                     syncBadge.innerHTML = `<span class="sync-dot" style="background:#ffb703;"></span><span>SYNC CONNECTING...</span>`;
@@ -155,19 +157,19 @@ class AdminController {
             }
         };
 
-        // Initial sync immediately
-        doSync();
+        // Initial sync with slight delay
+        setTimeout(doSync, 500);
 
-        // 4.5s polling loop when tab is focused, 15s when backgrounded
-        let pollTimer = setInterval(doSync, 4500);
+        // 10s polling when focused, 30s when backgrounded (reduces lag)
+        let pollTimer = setInterval(doSync, 10000);
 
         document.addEventListener('visibilitychange', () => {
             clearInterval(pollTimer);
             if (document.hidden) {
-                pollTimer = setInterval(doSync, 15000);
+                pollTimer = setInterval(doSync, 30000);
             } else {
                 doSync();
-                pollTimer = setInterval(doSync, 4500);
+                pollTimer = setInterval(doSync, 10000);
             }
         });
     }
@@ -256,8 +258,9 @@ class AdminController {
             exportBtn.addEventListener('click', () => this.exportCsv());
         }
 
-        // Global data updates
-        window.addEventListener('escape_room_data_changed', () => {
+        // Global data updates (only for local changes, not cloud sync — polling handles cloud)
+        window.addEventListener('escape_room_data_changed', (e) => {
+            if (e.detail && e.detail.source === 'cloud') return; // polling loop handles this
             this.renderStats();
             this.renderCurrentView();
         });

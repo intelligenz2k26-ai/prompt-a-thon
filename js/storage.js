@@ -121,14 +121,24 @@ const Storage = {
     _isSyncing: false,
     _lastCloudSyncTime: 0,
 
+    getCloudUrl() {
+        const ts = Date.now();
+        const rand = Math.random().toString(36).substring(2, 9);
+        return `${this.CLOUD_ENDPOINT}?_t=${ts}&_r=${rand}`;
+    },
+
     async syncFromCloud() {
         if (this._isSyncing) return this.getParticipants();
         this._isSyncing = true;
         try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 6000);
-            const res = await fetch(this.CLOUD_ENDPOINT, { 
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
+            const res = await fetch(this.getCloudUrl(), { 
                 cache: 'no-store',
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache'
+                },
                 signal: controller.signal 
             });
             clearTimeout(timeoutId);
@@ -151,7 +161,7 @@ const Storage = {
                     
                     const deletedIds = this.getDeletedIds();
                     const cloudHasDeleted = cloudList.some(p => p && p.id && deletedIds.has(String(p.id).toUpperCase().trim()));
-                    if (cloudHasDeleted || merged.length > cloudList.length) {
+                    if (cloudHasDeleted) {
                         this.syncToCloud(merged, true);
                     }
                     
@@ -160,7 +170,7 @@ const Storage = {
                 }
             }
         } catch (e) {
-            // Silently fallback to local storage
+            console.warn('Sync from cloud notice:', e.message || e);
         } finally {
             this._isSyncing = false;
         }
@@ -173,9 +183,19 @@ const Storage = {
 
         try {
             if (!isDelete) {
-                // If it's a regular save, fetch cloud and merge (ignoring deletedIds)
+                // Fetch fresh remote cloud data using cache-buster and merge
                 try {
-                    const checkRes = await fetch(this.CLOUD_ENDPOINT, { cache: 'no-store' });
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 6000);
+                    const checkRes = await fetch(this.getCloudUrl(), { 
+                        cache: 'no-store',
+                        headers: {
+                            'Cache-Control': 'no-cache, no-store, must-revalidate',
+                            'Pragma': 'no-cache'
+                        },
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
                     if (checkRes.ok) {
                         const remoteList = await checkRes.json();
                         if (Array.isArray(remoteList) && remoteList.length > 0) {
@@ -186,12 +206,17 @@ const Storage = {
                 } catch (mergeErr) {}
             }
 
-            await fetch(this.CLOUD_ENDPOINT, {
+            const postRes = await fetch(this.CLOUD_ENDPOINT, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Cache-Control': 'no-cache, no-store, must-revalidate'
+                },
                 body: JSON.stringify(toSend)
             });
-            this._lastCloudSyncTime = Date.now();
+            if (postRes.ok) {
+                this._lastCloudSyncTime = Date.now();
+            }
             return toSend;
         } catch (e) {
             console.warn('Cloud sync error:', e);

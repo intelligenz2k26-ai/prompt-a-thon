@@ -515,17 +515,184 @@
     .podium-card.third { order: 3; }
 }
 
+/* ============================================================
+   MOBILE RESPONSIVE — Phone / Tablet Admin View
+   ============================================================ */
 @media (max-width: 768px) {
+    /* Sidebar becomes horizontal scrollable nav bar on mobile */
     .admin-layout {
         flex-direction: column;
+        min-height: unset;
     }
+
     .admin-sidebar {
         width: 100%;
         border-right: none;
         border-bottom: 1px solid var(--border-subtle);
+        padding: 0;
+        flex-direction: column;
     }
+
+    .sidebar-brand-title {
+        display: none;
+    }
+
+    /* Horizontal scrollable pill nav on mobile */
+    .sidebar-nav-list {
+        flex-direction: row;
+        overflow-x: auto;
+        gap: 0.25rem;
+        padding: 0.5rem;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .sidebar-nav-list::-webkit-scrollbar { display: none; }
+
+    .sidebar-link {
+        white-space: nowrap;
+        flex-shrink: 0;
+        padding: 0.5rem 0.9rem;
+        font-size: 0.8rem;
+        border-radius: 99px;
+        border-left: none !important;
+        gap: 0.4rem;
+    }
+
+    .sidebar-link.active {
+        border-left: none;
+        background: rgba(0, 240, 255, 0.18);
+        border: 1px solid var(--cyan-glow);
+    }
+
+    .sidebar-link .icon {
+        font-size: 1rem;
+    }
+
+    .sidebar-badge {
+        display: none;
+    }
+
+    /* Hide the confidential notice on mobile */
+    .admin-sidebar > div:last-child {
+        display: none;
+    }
+
     .admin-main {
-        padding: 1.5rem 1rem;
+        padding: 1rem 0.75rem;
+    }
+
+    /* Stats — 2 columns on mobile */
+    .admin-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.65rem;
+        margin-bottom: 1rem;
+    }
+
+    .stat-card {
+        padding: 0.75rem 1rem;
+    }
+
+    .stat-info-count {
+        font-size: 1.5rem;
+    }
+
+    .stat-icon {
+        font-size: 1.6rem;
+    }
+
+    /* Page header — stack on mobile */
+    .admin-page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .admin-page-header h1 {
+        font-size: 1.1rem;
+    }
+
+    /* Toolbar rows */
+    .admin-toolbar-row {
+        flex-direction: column;
+        gap: 0.65rem;
+    }
+    .toolbar-left, .toolbar-center, .toolbar-right {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    /* Tables — horizontal scroll */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .admin-table td, .admin-table th {
+        padding: 0.6rem 0.75rem;
+        font-size: 0.8rem;
+    }
+
+    /* Top nav — hide some buttons on small screens */
+    .nav-actions .btn-sm {
+        display: none;
+    }
+    #admin-sync-btn,
+    #cloud-sync-status {
+        display: inline-flex !important;
+    }
+
+    /* Batch action bars */
+    .batch-actions-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 0.65rem 0.85rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+
+    .stat-card {
+        padding: 0.6rem 0.75rem;
+    }
+
+    .stat-info-title {
+        font-size: 0.72rem;
+    }
+
+    .stat-info-count {
+        font-size: 1.3rem;
+    }
+
+    .stat-icon {
+        font-size: 1.3rem;
+    }
+
+    .admin-main {
+        padding: 0.75rem 0.5rem;
+    }
+
+    /* Evaluation grid single col */
+    .eval-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    /* Rubric compact */
+    .rubric-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        padding: 0.65rem 0;
+    }
+
+    .rubric-input-wrap {
+        width: 100%;
+        justify-content: flex-end;
     }
 }
 
