@@ -1,38 +1,7 @@
 /**
- * CLOUDFLARE WORKER BACKEND ROUTER & REALTIME DATA ENGINE
- * Handles same-origin API (/api/participants), routing (/admin -> admin.html), and static assets.
+ * CLOUDFLARE WORKER NATIVE KV BACKEND
+ * Connects directly to Cloudflare KV for guaranteed global realtime sync across all devices.
  */
-
-let memoryParticipants = [];
-const BACKUP_KV_URL = 'https://kvdb.io/7WSqXoKQGY5BLvRnc6bmqT/participants';
-
-async function hydrateBackup() {
-  try {
-    const res = await fetch(BACKUP_KV_URL + '?_t=' + Date.now(), {
-      headers: { 'Cache-Control': 'no-cache' }
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        memoryParticipants = data;
-      }
-    }
-  } catch (e) {
-    console.error('Hydrate error:', e);
-  }
-}
-
-async function persistBackup(list) {
-  try {
-    await fetch(BACKUP_KV_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(list)
-    });
-  } catch (e) {
-    console.error('Persist error:', e);
-  }
-}
 
 export default {
   async fetch(request, env, ctx) {
@@ -50,34 +19,37 @@ export default {
       });
     }
 
-    // Unified Realtime Shared Participants API
+    // Unified Realtime Shared Participants API (backed by Cloudflare KV)
     if (url.pathname === '/api/participants') {
       if (request.method === 'GET') {
-        if (memoryParticipants.length === 0) {
-          await hydrateBackup();
-        }
-        return new Response(JSON.stringify(memoryParticipants), {
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Cache-Control': 'no-store, no-cache, must-revalidate',
-            'Pragma': 'no-cache'
+        try {
+          let data = null;
+          if (env.PROMPT_DATA) {
+            data = await env.PROMPT_DATA.get('participants', { type: 'json' });
           }
-        });
+          if (!Array.isArray(data)) data = [];
+          return new Response(JSON.stringify(data), {
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+              'Cache-Control': 'no-store, no-cache, must-revalidate',
+              'Pragma': 'no-cache'
+            }
+          });
+        } catch (err) {
+          return new Response(JSON.stringify([]), {
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
       }
 
       if (request.method === 'POST') {
         try {
           const body = await request.json();
-          if (Array.isArray(body)) {
-            memoryParticipants = body;
-            if (ctx && ctx.waitUntil) {
-              ctx.waitUntil(persistBackup(body));
-            } else {
-              persistBackup(body);
-            }
+          if (Array.isArray(body) && env.PROMPT_DATA) {
+            await env.PROMPT_DATA.put('participants', JSON.stringify(body));
           }
-          return new Response(JSON.stringify({ success: true, count: memoryParticipants.length }), {
+          return new Response(JSON.stringify({ success: true, count: Array.isArray(body) ? body.length : 0 }), {
             headers: {
               'Content-Type': 'application/json',
               'Access-Control-Allow-Origin': '*',
@@ -93,7 +65,7 @@ export default {
       }
     }
 
-    // Clean URL Rewrite: /admin and /admin/ -> admin.html (No redirect loop!)
+    // Clean URL Rewrite: /admin and /admin/ -> admin.html
     if (url.pathname === '/admin' || url.pathname === '/admin/') {
       url.pathname = '/admin.html';
       return env.ASSETS.fetch(new Request(url.toString(), request));

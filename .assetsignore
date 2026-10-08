@@ -1,0 +1,6 @@
+_worker.js
+.git
+.gitignore
+.wrangler
+wrangler.toml
+README.md

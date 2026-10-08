@@ -1,6 +1,10 @@
-name = "prompt-a-thon"
+name = "prompt-a-thon-ai"
 main = "_worker.js"
 compatibility_date = "2024-09-23"
 
 [assets]
 directory = "."
+
+[[kv_namespaces]]
+binding = "PROMPT_DATA"
+id = "1dd6447c6e114c5a8a893747f227e620"
