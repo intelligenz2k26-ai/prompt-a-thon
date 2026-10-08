@@ -1,3 +1,6 @@
-name = "sympo-prompt-a-than"
+name = "prompt-a-thon"
 compatibility_date = "2024-09-23"
 pages_build_output_dir = "."
+
+[assets]
+directory = "."
