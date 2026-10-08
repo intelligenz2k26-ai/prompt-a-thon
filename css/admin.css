@@ -570,3 +570,250 @@
     accent-color: var(--cyan-glow);
 }
 
+/* ==========================================================================
+   RESTRICTED TERMINAL - Admin Login Gate (Matching reference image)
+   ========================================================================== */
+.admin-auth-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: radial-gradient(circle at 50% 30%, rgba(0, 240, 255, 0.08) 0%, rgba(6, 9, 19, 0.98) 70%, #04060d 100%);
+    backdrop-filter: blur(16px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    overflow-y: auto;
+}
+
+.admin-auth-overlay.hidden {
+    display: none !important;
+}
+
+.restricted-terminal-card {
+    width: 100%;
+    max-width: 440px;
+    background: linear-gradient(180deg, rgba(13, 20, 38, 0.96) 0%, rgba(7, 11, 23, 0.99) 100%);
+    border: 1px solid rgba(0, 240, 255, 0.35);
+    border-radius: 20px;
+    padding: 2.75rem 2.25rem 2rem;
+    box-shadow: 0 0 50px rgba(0, 240, 255, 0.12), 0 20px 40px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(0, 255, 136, 0.3);
+    text-align: center;
+    position: relative;
+    animation: terminalScaleUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes terminalScaleUp {
+    from { transform: scale(0.92); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.restricted-shield-badge {
+    width: 76px;
+    height: 76px;
+    margin: 0 auto 1.5rem;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 240, 255, 0.22) 0%, rgba(10, 25, 48, 0.8) 70%);
+    border: 1.5px solid rgba(0, 240, 255, 0.6);
+    box-shadow: 0 0 25px rgba(0, 240, 255, 0.35), inset 0 0 15px rgba(0, 240, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.terminal-header-title {
+    font-family: var(--font-heading, 'Orbitron', sans-serif);
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.4rem;
+    text-transform: uppercase;
+}
+
+.terminal-header-title .cyan-word {
+    color: var(--cyan-glow, #00f0ff);
+    text-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
+}
+
+.terminal-header-sub {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.74rem;
+    letter-spacing: 0.12em;
+    color: #64748b;
+    margin-bottom: 2rem;
+    text-transform: uppercase;
+}
+
+.terminal-form-group {
+    text-align: left;
+    margin-bottom: 1.25rem;
+}
+
+.terminal-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--font-tech, 'Rajdhani', sans-serif);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    text-transform: uppercase;
+    margin-bottom: 0.45rem;
+}
+
+.terminal-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.terminal-input {
+    width: 100%;
+    background: #e8f0fe !important;
+    color: #0f172a !important;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: var(--font-mono, monospace);
+    outline: none;
+    transition: all 0.25s ease;
+}
+
+.terminal-input:focus {
+    border-color: #00f0ff;
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+    background: #ffffff !important;
+}
+
+.terminal-toggle-btn {
+    position: absolute;
+    right: 0.75rem;
+    background: transparent;
+    border: none;
+    color: #475569;
+    font-size: 1.15rem;
+    cursor: pointer;
+    padding: 0.25rem 0.4rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.terminal-toggle-btn:hover {
+    color: #0f172a;
+}
+
+.terminal-submit-btn {
+    width: 100%;
+    margin-top: 0.75rem;
+    background: linear-gradient(135deg, #063826 0%, #0d4a34 100%);
+    border: 1.5px solid #00ff88;
+    color: #ffffff;
+    font-family: var(--font-heading, 'Orbitron', sans-serif);
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 1rem 1.25rem;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    box-shadow: 0 0 25px rgba(0, 255, 136, 0.2);
+    transition: all 0.25s ease;
+}
+
+.terminal-submit-btn:hover {
+    background: linear-gradient(135deg, #094d34 0%, #126346 100%);
+    box-shadow: 0 0 35px rgba(0, 255, 136, 0.45);
+    transform: translateY(-1px);
+}
+
+.terminal-error-msg {
+    margin-top: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    background: rgba(255, 23, 68, 0.15);
+    border: 1px solid #ff1744;
+    border-radius: 8px;
+    color: #fca5a5;
+    font-size: 0.82rem;
+    font-family: var(--font-tech, 'Rajdhani', sans-serif);
+    letter-spacing: 0.04em;
+    display: none;
+    animation: terminalShake 0.35s ease;
+}
+
+@keyframes terminalShake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
+}
+
+.terminal-divider {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    margin: 1.75rem 0 1.25rem;
+}
+
+.terminal-footer-notice {
+    font-size: 0.74rem;
+    color: #64748b;
+    font-family: var(--font-tech, 'Rajdhani', sans-serif);
+    letter-spacing: 0.06em;
+    margin-bottom: 0.75rem;
+}
+
+.terminal-return-link {
+    color: var(--cyan-glow, #00f0ff);
+    font-size: 0.85rem;
+    font-family: var(--font-tech, 'Rajdhani', sans-serif);
+    font-weight: 600;
+    text-decoration: none;
+    letter-spacing: 0.04em;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.terminal-return-link:hover {
+    color: #ffffff;
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+}
+
+/* Global Real-time Cloud Sync Badge */
+.sync-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: rgba(0, 255, 136, 0.1);
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    border-radius: var(--radius-sm);
+    padding: 0.35rem 0.65rem;
+    font-size: 0.72rem;
+    font-family: var(--font-tech);
+    color: var(--green-glow);
+    letter-spacing: 0.05em;
+    font-weight: 700;
+}
+
+.sync-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green-glow);
+    box-shadow: 0 0 8px var(--green-glow);
+    animation: pulseDot 2s infinite ease-in-out;
+}
+
+@keyframes pulseDot {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.3); opacity: 0.5; }
+}
+

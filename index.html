@@ -16,7 +16,7 @@
     <nav class="top-nav">
         <a href="index.html" class="brand-badge">
             <div class="brand-icon">🔐</div>
-            <div>
+            <div class="brand-text">
                 <div class="brand-title">PROMPT ESCAPE ROOM</div>
                 <div class="brand-tagline">Collegiate Prompt Engineering Challenge</div>
             </div>
@@ -62,7 +62,7 @@
                     <form id="registration-form">
                         <div class="form-group">
                             <label class="form-label" for="reg-name">Full Name *</label>
-                            <input type="text" id="reg-name" class="form-input" placeholder="e.g. Surya" required>
+                            <input type="text" id="reg-name" class="form-input" placeholder="e.g. bala" required>
                         </div>
 
                         <div class="form-group">
@@ -93,7 +93,7 @@
 
                         <div class="form-group">
                             <label class="form-label" for="reg-email">Email Address *</label>
-                            <input type="email" id="reg-email" class="form-input" placeholder="e.g. surya@mce.edu" required>
+                            <input type="email" id="reg-email" class="form-input" placeholder="e.g. bala@mce.edu" required>
                         </div>
 
                         <button type="submit" class="btn btn-cyan" style="width: 100%; margin-top: 1rem; padding: 0.9rem;">
@@ -138,7 +138,7 @@
                             <div style="font-size: 0.75rem; color: var(--cyan-glow); font-family: var(--font-tech); text-transform: uppercase;">
                                 AGENT ID: <span id="participant-id-display" class="font-mono" style="font-weight: 700;">P001</span>
                             </div>
-                            <div id="participant-name-display" class="name">Surya</div>
+                            <div id="participant-name-display" class="name">bala</div>
                             <div id="participant-college-display" class="meta">MCE • CSE (III)</div>
                         </div>
                     </div>
@@ -208,7 +208,7 @@
                 <div id="level-card-3" class="level-card locked-card">
                     <div class="level-card-top">
                         <span class="level-card-badge level-3-badge">LEVEL 03</span>
-                        <span style="font-family: var(--font-mono); font-size: 0.8rem; color: #ff3377;">10 MIN</span>
+                        <span style="font-family: var(--font-mono); font-size: 0.8rem; color: #ff3377;">15 MIN</span>
                     </div>
                     <div class="level-title">🔴 HARD 🔐</div>
                     <div class="level-desc">"Fix The Prompt" — Master Level Prompt Re-Engineering.</div>
@@ -374,7 +374,7 @@
                     <div class="chamber-title-group">
                         <h2>🔴 ROUND 3 — HARD 🔐</h2>
                         <div class="chamber-subheading">
-                            Challenge: “FIX THE PROMPT” | Time Allotted: 10 Minutes
+                            Challenge: “FIX THE PROMPT” | Time Allotted: 15 Minutes
                         </div>
                     </div>
                     <div>
@@ -383,37 +383,73 @@
                 </div>
 
                 <div class="r3-split-card">
-                    <!-- Bad Prompt -->
-                    <div class="bad-prompt-box">
-                        <div class="prompt-box-header" style="color: #ff5252;">
-                            ❌ ORIGINAL BAD PROMPT
+                    <!-- Problem Statement Card (left) -->
+                    <div class="bad-prompt-box" style="background: rgba(0,240,255,0.06); border-color: rgba(0,240,255,0.45);">
+                        <div class="prompt-box-header" style="color: var(--cyan-glow); font-size: 1rem; margin-bottom: 0.85rem;">
+                            📋 PROBLEM STATEMENT
                         </div>
-                        <div style="font-family: var(--font-mono); font-size: 1.15rem; color: #ff6b6b; font-weight: 700; margin-bottom: 0.75rem;">
-                            "Make a good college website"
+                        <div style="font-family: var(--font-mono); font-size: 1.05rem; color: #38bdf8; font-weight: 700; margin-bottom: 0.65rem; line-height: 1.45;">
+                            "Design &amp; Build a College ERP Portal using AI Prompting"
                         </div>
-                        <p style="font-size: 0.85rem; color: #cbd5e1;">
-                            <strong>Why it fails:</strong> Extremely vague, lacks target audience, misses responsive specifications, has zero information architecture or event features.
+                        <p style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.65; margin-bottom: 0.75rem;">
+                            Your college needs a centralized Enterprise Resource Planning (ERP) portal. 
+                            You must craft a <strong style="color:#00f0ff;">master-level AI prompt</strong> 
+                            that instructs an AI to build the <em>complete</em> College ERP website — 
+                            then deploy it live and paste the URL below.
                         </p>
+                        <div style="background: rgba(0,0,0,0.4); border-radius: var(--radius-sm); padding: 0.7rem 0.9rem; font-size: 0.8rem; color: #94a3b8; font-family: var(--font-tech);">
+                            <div style="color: var(--amber-glow); font-weight: 700; margin-bottom: 0.4rem;">⚠️ YOUR PROMPT MUST INCLUDE:</div>
+                            <div style="display: flex; flex-direction: column; gap: 0.28rem;">
+                                <span>✦ Student, Faculty &amp; Admin login/dashboards</span>
+                                <span>✦ Attendance tracking &amp; timetable schedule grid</span>
+                                <span>✦ Semester marks, internal grades &amp; GPA viewer</span>
+                                <span>✦ Fee payment status &amp; digital receipt module</span>
+                                <span>✦ Responsive UI with modern dark/light mode &amp; charts</span>
+                                <span>✦ Profile management, notifications &amp; course list</span>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Target Directive -->
-                    <div class="fixed-prompt-box">
-                        <div class="prompt-box-header" style="color: var(--green-glow);">
-                            🎯 MISSION: TRANSFORM INTO AN EXPERT PROMPT
+                    <!-- Evaluation Criteria Card (right) -->
+                    <div class="fixed-prompt-box" style="background: rgba(0,255,136,0.06); border-color: rgba(0,255,136,0.4);">
+                        <div class="prompt-box-header" style="color: var(--green-glow); font-size: 1rem; margin-bottom: 0.85rem;">
+                            🏆 HOW YOU WILL BE JUDGED
                         </div>
-                        <p style="font-size: 0.88rem; color: #cbd5e1; line-height: 1.6;">
-                            Re-engineer this prompt by specifying symposium details, responsive design, schedules, registration workflows, visual glassmorphism aesthetic, and tech audience persona.
-                        </p>
+                        <div style="display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.84rem; color: #cbd5e1; line-height: 1.5;">
+                            <div style="background: rgba(0,255,136,0.08); border-radius: var(--radius-sm); padding: 0.55rem 0.8rem; border-left: 3px solid var(--green-glow);">
+                                <strong style="color:#00ff88;">🎯 Clarity (10 pts)</strong><br>
+                                Is your prompt specific, structured &amp; unambiguous?
+                            </div>
+                            <div style="background: rgba(0,240,255,0.08); border-radius: var(--radius-sm); padding: 0.55rem 0.8rem; border-left: 3px solid var(--cyan-glow);">
+                                <strong style="color:#00f0ff;">📐 Specificity (10 pts)</strong><br>
+                                Does it cover all required ERP modules &amp; tech specs?
+                            </div>
+                            <div style="background: rgba(157,78,221,0.08); border-radius: var(--radius-sm); padding: 0.55rem 0.8rem; border-left: 3px solid var(--purple-glow);">
+                                <strong style="color:#c084fc;">✨ Creativity (10 pts)</strong><br>
+                                Unique dashboard features, analytics charts &amp; UI polish?
+                            </div>
+                            <div style="background: rgba(255,183,3,0.08); border-radius: var(--radius-sm); padding: 0.55rem 0.8rem; border-left: 3px solid var(--amber-glow);">
+                                <strong style="color:#ffb703;">🌐 Live ERP Website (10 pts)</strong><br>
+                                Deployed, functional &amp; matches your prompt?
+                            </div>
+                            <div style="background: rgba(255,0,136,0.08); border-radius: var(--radius-sm); padding: 0.55rem 0.8rem; border-left: 3px solid #ff007f;">
+                                <strong style="color:#ff5eae;">🚀 Output Quality (10 pts)</strong><br>
+                                Professional look, responsive &amp; error-free?
+                            </div>
+                        </div>
+                        <div style="margin-top: 0.85rem; font-size: 0.78rem; color: var(--text-muted); text-align: center; font-family: var(--font-tech);">
+                            TOTAL: <strong style="color:#fff;">50 MARKS</strong> — Top scorers win the Vault! 🔓
+                        </div>
                     </div>
                 </div>
 
                 <div>
                     <div class="form-group">
                         <label class="form-label" for="r3-prompt-input">
-                            <span>YOUR RE-ENGINEERED MASTER PROMPT:</span>
+                            <span>✍️ YOUR MASTER PROMPT FOR THE COLLEGE ERP PORTAL:</span>
                             <span style="color: var(--green-glow); font-size: 0.8rem;">FINAL ROUND SUBMISSION</span>
                         </label>
-                        <textarea id="r3-prompt-input" class="form-textarea" style="min-height: 140px;" placeholder="Create a modern responsive website for a college technical symposium with event details, registration, schedule, gallery and contact sections..."></textarea>
+                        <textarea id="r3-prompt-input" class="form-textarea" style="min-height: 155px;" placeholder="Act as a Principal Enterprise Software Architect. Build a modern, full-featured College ERP Portal for [College Name]. Include: Student &amp; Faculty role dashboards, Attendance tracker with percentage alerts, Semester marks and GPA viewer, Timetable schedule grid, Fee payment management with status, Course registration, dark/light theme, responsive data tables and charts..."></textarea>
                         <div id="r3-quality-meter" style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; padding: 0.4rem 0.75rem; background: rgba(5, 9, 18, 0.7); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 0.82rem; font-family: var(--font-tech);">
                             <span id="r3-quality-label" style="color: var(--text-muted);">
                                 ⚡ PROMPT QUALITY SCORE: <strong id="r3-quality-pct" style="color: #ff5252;">0%</strong> (Need ≥ 50%)
@@ -422,16 +458,38 @@
                         </div>
                     </div>
 
+                    <!-- Live Website / Project URL Submission Box -->
+                    <div class="form-group" style="margin-top: 1rem; margin-bottom: 1.25rem;">
+                        <label class="form-label" for="r3-website-url">
+                            <span>🌐 YOUR LIVE COLLEGE ERP WEBSITE URL:</span>
+                            <span style="color: var(--cyan-glow); font-size: 0.8rem;">PASTE HOSTED LINK</span>
+                        </label>
+                        <div style="position: relative;">
+                            <input 
+                                type="url" 
+                                id="r3-website-url" 
+                                class="form-input" 
+                                placeholder="https://your-college-erp.vercel.app  or  GitHub Pages / Netlify URL"
+                                style="padding-left: 2.75rem; font-family: var(--font-mono); font-size: 0.9rem;"
+                            />
+                            <span style="position: absolute; left: 0.9rem; top: 50%; transform: translateY(-50%); font-size: 1.1rem; pointer-events: none; opacity: 0.8;">🔗</span>
+                        </div>
+                        <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 0.45rem; display: flex; align-items: center; gap: 0.4rem;">
+                            <span style="color: var(--cyan-glow);">💡</span>
+                            <span>Use ChatGPT / Gemini / Claude with your prompt → build the ERP site → deploy on Vercel / Netlify / GitHub Pages → paste URL here.</span>
+                        </div>
+                    </div>
+
                     <button id="r3-submit-btn" class="btn btn-green" style="width: 100%;">
-                        🏆 SUBMIT MASTER PROMPT & CLEAR FINAL VAULT
+                        🏆 SUBMIT PROMPT &amp; LIVE WEBSITE — CLEAR FINAL VAULT
                     </button>
 
                     <div class="ai-terminal" style="margin-top: 1.25rem;">
                         <div class="terminal-header">
-                            <span>PROMPT RE-ENGINEERING EVALUATION SYSTEM</span>
+                            <span>COLLEGE ERP WEBSITE PROMPT EVALUATION SYSTEM</span>
                         </div>
                         <div id="r3-terminal-output" class="terminal-body">
-                            <div>Awaiting participant's improved prompt submission...</div>
+                            <div>Awaiting your master ERP prompt &amp; live website URL submission...</div>
                         </div>
                     </div>
                 </div>
@@ -442,19 +500,51 @@
     </main>
 
     <!-- ============================================================
-         UNLOCK CELEBRATION MODAL
+         UNLOCK CELEBRATION & GREETING MODAL
          ============================================================ -->
     <div id="unlock-celebration-modal" class="unlock-celebration-modal hidden">
-        <div class="unlock-celebration-card">
-            <div class="unlock-trophy-ring">🎉</div>
-            <h2 id="celebration-title" style="font-size: 1.7rem; color: #ffffff; margin-bottom: 0.75rem;">
+        <div class="unlock-celebration-card" id="celebration-card">
+            <div id="celebration-trophy" class="unlock-trophy-ring">🎉</div>
+            <h2 id="celebration-title" style="font-size: 1.65rem; color: #ffffff; margin-bottom: 0.75rem;">
                 LOCK UNLOCKED!
             </h2>
-            <p id="celebration-msg" style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.6; margin-bottom: 2rem;">
+            <div id="celebration-msg" style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.75rem;">
                 Chamber unlocked successfully.
-            </p>
-            <button id="celebration-next-btn" class="btn btn-cyan" style="width: 100%; padding: 0.85rem;">
-                CONTINUE
+            </div>
+            <div id="celebration-actions-container" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                <button id="celebration-next-btn" class="btn btn-cyan" style="width: 100%; padding: 0.85rem;">
+                    CONTINUE
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         EMERGENCY SESSION TERMINATED // LOCKDOWN MODAL
+         ============================================================ -->
+    <div id="session-terminated-modal" class="session-terminated-modal hidden">
+        <div class="session-terminated-card">
+            <div class="terminated-alarm-icon">🚨</div>
+            <h2 class="terminated-title">
+                SESSION TERMINATED
+            </h2>
+            <div class="terminated-sub">
+                // CHAMBER AUTO-LOCKDOWN ENGAGED //
+            </div>
+            <div class="terminated-body">
+                <p style="color: #fca5a5; font-size: 0.95rem; font-weight: 700; margin-bottom: 0.65rem;">
+                    ⛔ TIME EXPIRED! You did not submit your response within the allocated 15:00 minutes limit.
+                </p>
+                <p style="color: #cbd5e1; font-size: 0.86rem; line-height: 1.6; margin-bottom: 1.25rem;">
+                    கால அவகாசம் முடிவடைந்தது! உங்கள் அமர்வு நிறுத்தப்பட்டு அறை நிரந்தரமாக பூட்டப்பட்டுள்ளது. இனி இந்த அமர்வில் சமர்ப்பிக்க இயலாது.
+                </p>
+                <div class="terminated-info-badge">
+                    <div>AGENT ID: <strong id="terminated-agent-id" style="color: #ffffff;">P001</strong></div>
+                    <div>SECURITY STATUS: <span style="color: #ff5252; font-weight: 700;">DISQUALIFIED (TIMEOUT)</span></div>
+                </div>
+            </div>
+            <button id="btn-terminated-exit" class="btn btn-red" style="width: 100%; padding: 0.95rem; font-weight: 800; letter-spacing: 0.05em; margin-top: 1.25rem;">
+                🚪 CLOSE SESSION & EXIT VAULT
             </button>
         </div>
     </div>
@@ -463,6 +553,7 @@
     <div id="toast-container" class="toast-container"></div>
 
     <!-- Scripts -->
+    <script src="js/ai-bg.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/sound.js"></script>
     <script src="js/captcha.js"></script>

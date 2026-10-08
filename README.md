@@ -69,7 +69,7 @@ Registration ──> Round 1 ──> Evaluation ──> Shortlist ──> Round 
 ### 4. 🔴 Level 03 (Hard) 🔐 — FIX THE PROMPT
 - **Eligibility**: Shortlisted **Top 10 finalists** only.
 - **Bad Prompt**: ❌ *"Make a good college website"*
-- **Task**: Re-engineer this vague prompt into an expert, context-rich specification for a modern symposium website.
+- **Task**: Re-engineer this vague prompt into an expert, enterprise-grade specification for a complete College ERP Portal.
 - **Time**: 10-minute countdown.
 - **Vault Clearance**: Submits improved prompt, clearing the final vault chamber.
 - **Final Evaluation Rubric (/50)**:

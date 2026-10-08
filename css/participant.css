@@ -5,8 +5,10 @@
 
 .escape-wrapper {
     max-width: 1200px;
-    margin: 2rem auto;
-    padding: 0 1.5rem 4rem;
+    margin: 1.5rem auto;
+    padding: 0 1.25rem 4rem;
+    position: relative;
+    z-index: 1;
 }
 
 /* Escape Room Header & Global Vault Status */
@@ -32,7 +34,7 @@
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    gap: 1.5rem;
+    gap: 1.25rem;
 }
 
 .agent-id-badge {
@@ -191,8 +193,8 @@
 .levels-selector-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
-    margin-bottom: 2.5rem;
+    gap: 1rem;
+    margin-bottom: 2rem;
 }
 
 .level-card {
@@ -267,11 +269,14 @@
 /* Chamber Main Interface (Chamber Box) */
 .chamber-panel {
     background: var(--bg-card);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--border-glow);
     border-radius: var(--radius-xl);
-    padding: 2.2rem;
+    padding: 2rem;
     box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
     position: relative;
+    z-index: 1;
 }
 
 .chamber-panel::before {
@@ -526,31 +531,110 @@
     50% { transform: translateY(-8px); }
 }
 
+/* Emergency Session Terminated Lockdown Modal */
+.session-terminated-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(8, 2, 6, 0.94);
+    backdrop-filter: blur(16px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100000;
+    animation: fadeIn 0.3s ease;
+}
+
+.session-terminated-card {
+    background: linear-gradient(180deg, #240a12, #0d0408);
+    border: 2px solid #ff1744;
+    box-shadow: 0 0 60px rgba(255, 23, 68, 0.5), inset 0 0 20px rgba(255, 23, 68, 0.2);
+    border-radius: var(--radius-xl);
+    padding: 3rem 2.5rem;
+    max-width: 520px;
+    width: 90%;
+    text-align: center;
+    position: relative;
+    animation: scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.terminated-alarm-icon {
+    width: 90px;
+    height: 90px;
+    margin: 0 auto 1.25rem;
+    border-radius: 50%;
+    background: rgba(255, 23, 68, 0.18);
+    border: 2px solid #ff1744;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    box-shadow: 0 0 35px rgba(255, 23, 68, 0.6);
+    animation: alarmPulse 1s infinite alternate;
+}
+
+@keyframes alarmPulse {
+    from { transform: scale(1); box-shadow: 0 0 25px rgba(255, 23, 68, 0.4); }
+    to { transform: scale(1.08); box-shadow: 0 0 45px rgba(255, 23, 68, 0.85); }
+}
+
+.terminated-title {
+    font-family: var(--font-heading, 'Orbitron', sans-serif);
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: #ff1744;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.3rem;
+    text-shadow: 0 0 20px rgba(255, 23, 68, 0.6);
+}
+
+.terminated-sub {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.78rem;
+    letter-spacing: 0.15em;
+    color: #fca5a5;
+    margin-bottom: 1.5rem;
+}
+
+.terminated-info-badge {
+    background: rgba(0, 0, 0, 0.75);
+    border: 1px solid rgba(255, 23, 68, 0.4);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-around;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.82rem;
+    color: #e2e8f0;
+}
+
 /* Registration & Login View */
 .portal-auth-card {
     max-width: 580px;
-    margin: 3rem auto;
-    padding: 2.5rem;
+    margin: 2.5rem auto;
+    padding: 2.25rem;
+    z-index: 1;
+    position: relative;
 }
 
 .portal-tabs {
     display: flex;
     border-bottom: 1px solid var(--border-subtle);
-    margin-bottom: 2rem;
+    margin-bottom: 1.75rem;
 }
 
 .portal-tab-btn {
     flex: 1;
-    padding: 0.9rem;
+    padding: 0.85rem 0.5rem;
     background: transparent;
     border: none;
     border-bottom: 2px solid transparent;
     color: var(--text-secondary);
     font-family: var(--font-tech);
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 0.95rem;
     cursor: pointer;
     transition: var(--transition);
+    -webkit-tap-highlight-color: transparent;
 }
 
 .portal-tab-btn.active {
@@ -559,20 +643,108 @@
     background: rgba(0, 240, 255, 0.05);
 }
 
-/* Responsive */
+/* ============================================================
+   RESPONSIVE — ESCAPE ROOM PARTICIPANT
+   ============================================================ */
+
 @media (max-width: 992px) {
     .vault-status-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr auto;
         gap: 1rem;
-        text-align: center;
     }
     .vault-timer-box {
-        align-items: center;
-    }
-    .levels-selector-grid {
-        grid-template-columns: 1fr;
+        align-items: flex-end;
     }
     .captcha-chamber-layout, .r2-layout, .r3-split-card {
         grid-template-columns: 1fr;
+    }
+    .levels-selector-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+    }
+    .level-title { font-size: 0.9rem; }
+    .level-desc  { font-size: 0.74rem; }
+}
+
+@media (max-width: 768px) {
+    .escape-wrapper { padding: 0 0.85rem 3rem; margin-top: 1rem; }
+
+    /* Vault Header */
+    .vault-header { padding: 1.1rem 1.1rem; margin-bottom: 1.25rem; }
+    .vault-status-grid {
+        grid-template-columns: 1fr;
+        gap: 0.85rem;
+        text-align: center;
+    }
+    .agent-id-badge  { justify-content: center; }
+    .vault-timer-box { align-items: center; }
+    .central-lock-hud { order: -1; }
+
+    /* Timer */
+    .timer-display { font-size: 1.7rem; }
+    .lock-dial-visual { width: 58px; height: 58px; }
+    .lock-icon-glyph  { font-size: 1.45rem; }
+
+    /* Level cards — 3 in a row on mobile but compact */
+    .levels-selector-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.55rem;
+        margin-bottom: 1.25rem;
+    }
+    .level-card      { padding: 0.85rem 0.7rem; }
+    .level-title     { font-size: 0.82rem; }
+    .level-desc      { display: none; } /* hide description to save space */
+    .level-state-status { font-size: 0.75rem; margin-top: 0.55rem; }
+    .level-card-badge { font-size: 0.68rem; padding: 0.15rem 0.45rem; }
+
+    /* Chamber Panel */
+    .chamber-panel  { padding: 1.25rem 1rem; border-radius: var(--radius-lg); }
+    .chamber-header-band { padding-bottom: 0.9rem; margin-bottom: 1.25rem; }
+    .chamber-title-group h2 { font-size: 1.1rem; }
+    .chamber-subheading     { font-size: 0.78rem; }
+
+    /* Challenge layouts → single column */
+    .captcha-chamber-layout, .r2-layout, .r3-split-card {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+    }
+
+    /* Auth card */
+    .portal-auth-card { margin: 1.5rem auto; padding: 1.5rem 1.1rem; }
+    .portal-tab-btn   { font-size: 0.85rem; padding: 0.7rem 0.35rem; }
+
+    /* Terminals */
+    .ai-terminal { padding: 0.9rem; }
+    .terminal-body { font-size: 0.8rem; }
+
+    /* Modals */
+    .unlock-celebration-card,
+    .session-terminated-card { padding: 2rem 1.5rem; }
+}
+
+@media (max-width: 480px) {
+    .escape-wrapper { padding: 0 0.65rem 2.5rem; }
+    .vault-header   { padding: 0.9rem 0.85rem; }
+
+    .timer-display  { font-size: 1.5rem; }
+    .lock-dial-visual { width: 52px; height: 52px; }
+    .lock-icon-glyph  { font-size: 1.25rem; }
+
+    .levels-selector-grid { gap: 0.4rem; }
+    .level-card     { padding: 0.7rem 0.55rem; }
+    .level-title    { font-size: 0.75rem; }
+
+    .chamber-panel  { padding: 1rem 0.85rem; }
+    .chamber-title-group h2 { font-size: 1rem; gap: 0.45rem; }
+
+    .portal-auth-card { margin: 1rem auto; padding: 1.25rem 0.9rem; }
+
+    .bad-prompt-box, .fixed-prompt-box { padding: 1rem; }
+
+    .unlock-celebration-card,
+    .session-terminated-card { padding: 1.75rem 1.2rem; width: 95%; }
+
+    .unlock-trophy-ring, .terminated-alarm-icon {
+        width: 70px; height: 70px; font-size: 2.2rem;
     }
 }

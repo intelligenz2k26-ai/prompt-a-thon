@@ -18,11 +18,28 @@ class AdminController {
         
         this.initElements();
         this.bindEvents();
+        this.checkAuth();
         this.initRouting();
         this.renderStats();
+        this.startCloudPolling();
     }
 
     initElements() {
+        // Cloud Sync elements
+        this.syncBtn = document.getElementById('admin-sync-btn');
+        this.syncStatus = document.getElementById('cloud-sync-status');
+
+        // Auth elements
+        this.authOverlay = document.getElementById('admin-auth-overlay');
+        this.authCard = document.getElementById('terminal-card');
+        this.authForm = document.getElementById('admin-auth-form');
+        this.operatorIdInput = document.getElementById('admin-operator-id');
+        this.securityKeyInput = document.getElementById('admin-security-key');
+        this.authError = document.getElementById('admin-auth-error');
+        this.toggleKeyBtn = document.getElementById('toggle-key-visibility');
+        this.logoutBtn = document.getElementById('admin-logout-btn');
+        this.adminLayout = document.getElementById('admin-layout');
+
         // Stats badges
         this.statRegistered = document.getElementById('stat-registered-count');
         this.statR1 = document.getElementById('stat-r1-count');
@@ -46,7 +63,152 @@ class AdminController {
         this.searchInputs = document.querySelectorAll('.table-search-input');
     }
 
+    checkAuth() {
+        const loggedIn = window.EscapeStorage.isAdminLoggedIn();
+        if (loggedIn) {
+            if (this.authOverlay) this.authOverlay.classList.add('hidden');
+            if (this.adminLayout) this.adminLayout.classList.remove('hidden');
+        } else {
+            if (this.authOverlay) this.authOverlay.classList.remove('hidden');
+            if (this.adminLayout) this.adminLayout.classList.add('hidden');
+            if (this.securityKeyInput) {
+                setTimeout(() => this.securityKeyInput.focus(), 150);
+            }
+        }
+    }
+
+    handleAuthSubmit() {
+        const id = (this.operatorIdInput ? this.operatorIdInput.value : '').trim().toLowerCase();
+        const key = (this.securityKeyInput ? this.securityKeyInput.value : '').trim();
+
+        // Credentials required: id: admin, pass: EVENT
+        if (id === 'admin' && key === 'EVENT') {
+            if (this.authError) this.authError.style.display = 'none';
+            window.EscapeStorage.setAdminLogin(true);
+            
+            if (window.escapeSound) window.escapeSound.unlock();
+
+            if (this.authOverlay) this.authOverlay.classList.add('hidden');
+            if (this.adminLayout) this.adminLayout.classList.remove('hidden');
+            this.showToast('✅ Authorization confirmed! Welcome to Command Desk.', 'green');
+            this.renderStats();
+            this.renderCurrentView();
+        } else {
+            if (window.escapeSound) window.escapeSound.error();
+            if (this.authError) {
+                this.authError.style.display = 'block';
+                this.authError.innerHTML = '⛔ ACCESS DENIED: Invalid Operator ID or Security Key';
+            }
+            if (this.authCard) {
+                this.authCard.style.animation = 'none';
+                void this.authCard.offsetWidth; // trigger reflow
+                this.authCard.style.animation = 'terminalShake 0.35s ease';
+            }
+            if (this.securityKeyInput) {
+                this.securityKeyInput.select();
+            }
+        }
+    }
+
+    logout() {
+        window.EscapeStorage.setAdminLogin(false);
+        if (this.securityKeyInput) this.securityKeyInput.value = '';
+        if (this.authError) this.authError.style.display = 'none';
+        if (this.authOverlay) this.authOverlay.classList.remove('hidden');
+        if (this.adminLayout) this.adminLayout.classList.add('hidden');
+        this.showToast('🔒 Operator logged out. Command Desk sealed.', 'amber');
+        if (this.securityKeyInput) this.securityKeyInput.focus();
+    }
+
+    startCloudPolling() {
+        let isSyncing = false;
+        const syncBadge = document.getElementById('cloud-sync-status');
+
+        const doSync = async () => {
+            if (isSyncing) return;
+            if (!window.EscapeStorage || !window.EscapeStorage.isAdminLoggedIn()) return;
+            isSyncing = true;
+            try {
+                const prevList = window.EscapeStorage.getParticipants();
+                const prevCount = prevList.length;
+                const fresh = await window.EscapeStorage.syncFromCloud();
+                const currentCount = (fresh || window.EscapeStorage.getParticipants()).length;
+
+                if (syncBadge) {
+                    syncBadge.innerHTML = `<span class="sync-dot" style="background:#00ff88; box-shadow:0 0 8px #00ff88;"></span><span>LIVE SYNC ACTIVE (${currentCount})</span>`;
+                }
+
+                if (fresh && fresh.length > prevCount) {
+                    if (window.escapeSound) window.escapeSound.unlock();
+                    const newGuys = fresh.slice(prevCount);
+                    const names = newGuys.map(p => `${p.name} (${p.id})`).join(', ');
+                    this.showToast(`⚡ New Registration: ${names}!`, 'green');
+                }
+                this.renderStats();
+                this.renderCurrentView();
+            } catch (err) {
+                if (syncBadge) {
+                    syncBadge.innerHTML = `<span class="sync-dot" style="background:#ffb703;"></span><span>SYNC CONNECTING...</span>`;
+                }
+            } finally {
+                isSyncing = false;
+            }
+        };
+
+        // Initial sync immediately
+        doSync();
+
+        // 4.5s polling loop when tab is focused, 15s when backgrounded
+        let pollTimer = setInterval(doSync, 4500);
+
+        document.addEventListener('visibilitychange', () => {
+            clearInterval(pollTimer);
+            if (document.hidden) {
+                pollTimer = setInterval(doSync, 15000);
+            } else {
+                doSync();
+                pollTimer = setInterval(doSync, 4500);
+            }
+        });
+    }
+
     bindEvents() {
+        // Auth form submit
+        if (this.authForm) {
+            this.authForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleAuthSubmit();
+            });
+        }
+
+        // Toggle security key password visibility
+        if (this.toggleKeyBtn && this.securityKeyInput) {
+            this.toggleKeyBtn.addEventListener('click', () => {
+                const isPass = this.securityKeyInput.type === 'password';
+                this.securityKeyInput.type = isPass ? 'text' : 'password';
+                this.toggleKeyBtn.textContent = isPass ? '🙈' : '👁️';
+            });
+        }
+
+        // Logout
+        if (this.logoutBtn) {
+            this.logoutBtn.addEventListener('click', () => {
+                this.logout();
+            });
+        }
+
+        // Manual Cloud Sync Button
+        if (this.syncBtn) {
+            this.syncBtn.addEventListener('click', async () => {
+                this.syncBtn.textContent = '⏳ Syncing...';
+                await window.EscapeStorage.syncFromCloud();
+                this.renderStats();
+                this.renderCurrentView();
+                this.syncBtn.textContent = '🔄 Sync';
+                this.showToast('☁️ Live Cloud Sync Complete!', 'green');
+            });
+        }
+
         // Nav link routing
         this.navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
@@ -449,7 +611,7 @@ class AdminController {
         this.updateSelectedCount(level);
     }
 
-    deleteSelected(level = 'reg') {
+    async deleteSelected(level = 'reg') {
         const config = this.getConfig(level);
         if (!config) return;
         const count = config.set.size;
@@ -459,7 +621,7 @@ class AdminController {
         }
 
         if (confirm(`⚠️ Are you sure you want to permanently delete the ${count} selected participant(s)? This action cannot be undone.`)) {
-            window.EscapeStorage.deleteParticipants(Array.from(config.set));
+            await window.EscapeStorage.deleteParticipants(Array.from(config.set));
             this.selectedRegIds.clear();
             this.selectedR1Ids.clear();
             this.selectedR2Ids.clear();
@@ -601,9 +763,9 @@ class AdminController {
     approveSelectedRound3() { this.approveSelected(3); }
     deleteSelectedRound3() { this.deleteSelected(3); }
 
-    deleteSingleParticipant(id, name) {
+    async deleteSingleParticipant(id, name) {
         if (confirm(`🗑️ Delete participant "${name}" (${id})?`)) {
-            window.EscapeStorage.deleteParticipant(id);
+            await window.EscapeStorage.deleteParticipant(id);
             this.selectedRegIds.delete(id);
             this.selectedR1Ids.delete(id);
             this.selectedR2Ids.delete(id);
@@ -1162,8 +1324,9 @@ class AdminController {
                     <td>${p.college}</td>
                     <td>
                         ${hasSubmitted 
-                            ? `<span style="color: var(--green-glow);">Submitted (${Math.floor(p.round3.timeTakenSec/60)}m ${p.round3.timeTakenSec%60}s)</span>` 
-                            : `<span style="color: var(--text-muted);">In Progress</span>`}
+                            ? `<div style="color: var(--green-glow);">Submitted (${Math.floor(p.round3.timeTakenSec/60)}m ${p.round3.timeTakenSec%60}s)</div>` 
+                            : `<div style="color: var(--text-muted);">In Progress</div>`}
+                        ${p.round3.websiteUrl ? `<a href="${p.round3.websiteUrl}" target="_blank" class="btn btn-sm btn-outline" style="color: var(--cyan-glow); border-color: rgba(0,240,255,0.4); font-size: 0.72rem; padding: 0.2rem 0.5rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem; margin-top: 0.35rem;">🌐 Live Site ↗</a>` : ''}
                     </td>
                     <td>
                         <strong style="color: var(--green-glow); font-family: var(--font-mono); font-size:1.15rem;">
@@ -1239,6 +1402,21 @@ class AdminController {
                             </div>
                             <div style="font-family: var(--font-mono); font-size: 0.9rem; line-height: 1.6; color: #f1f5f9; white-space: pre-wrap;">
                                 ${p.round3.improvedPrompt || 'No improved prompt submitted yet.'}
+                            </div>
+                        </div>
+
+                        <!-- Submitted Live Website Project Box -->
+                        <div style="background: rgba(0, 240, 255, 0.06); border: 1px solid var(--cyan-glow); border-radius: var(--radius-md); padding: 1.1rem 1.25rem; margin-top: 1.25rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                                <div style="font-weight: 700; color: var(--cyan-glow); font-size: 0.92rem; display: flex; align-items: center; gap: 0.5rem;">
+                                    <span>🌐</span> PARTICIPANT'S LIVE WEBSITE / DEMO URL:
+                                </div>
+                                ${p.round3.websiteUrl ? `<a href="${p.round3.websiteUrl}" target="_blank" class="btn btn-sm btn-cyan" style="text-decoration: none; padding: 0.35rem 0.75rem;">🚀 Open Live Website ↗</a>` : ''}
+                            </div>
+                            <div style="font-family: var(--font-mono); font-size: 0.9rem; word-break: break-all;">
+                                ${p.round3.websiteUrl 
+                                    ? `<a href="${p.round3.websiteUrl}" target="_blank" style="color: #38bdf8; text-decoration: underline;">${p.round3.websiteUrl}</a>` 
+                                    : `<span style="color: var(--text-muted); font-style: italic;">No website URL submitted.</span>`}
                             </div>
                         </div>
                     </div>
@@ -1443,7 +1621,7 @@ class AdminController {
 
     exportCsv() {
         const list = window.EscapeStorage.getParticipants();
-        const headers = ["ID", "Name", "College", "Dept", "Year", "Phone", "Email", "Status", "R1_Score", "R2_Score", "R3_Score", "Total_Score", "Final_Status"];
+        const headers = ["ID", "Name", "College", "Dept", "Year", "Phone", "Email", "Status", "R1_Score", "R2_Score", "R3_Score", "Total_Score", "R3_Website_URL", "Final_Status"];
         
         const rows = list.map(p => {
             const r1 = p.round1.score.total || 0;
@@ -1463,6 +1641,7 @@ class AdminController {
                 r2,
                 r3,
                 tot,
+                `"${p.round3.websiteUrl || ''}"`,
                 p.round3.evalStatus || 'None'
             ].join(',');
         });

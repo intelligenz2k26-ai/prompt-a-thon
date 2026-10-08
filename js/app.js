@@ -74,6 +74,7 @@ class ParticipantApp {
         
         // Round 3 elements
         this.r3PromptInput = document.getElementById('r3-prompt-input');
+        this.r3WebsiteUrl = document.getElementById('r3-website-url');
         this.r3SubmitBtn = document.getElementById('r3-submit-btn');
         this.r3QualityPct = document.getElementById('r3-quality-pct');
         this.r3QualityBadge = document.getElementById('r3-quality-badge');
@@ -84,6 +85,13 @@ class ParticipantApp {
         this.celebrationTitle = document.getElementById('celebration-title');
         this.celebrationMsg = document.getElementById('celebration-msg');
         this.celebrationNextBtn = document.getElementById('celebration-next-btn');
+        this.celebrationActions = document.getElementById('celebration-actions-container');
+        this.celebrationTrophy = document.getElementById('celebration-trophy');
+
+        // Session Terminated Lockdown modal
+        this.terminatedModal = document.getElementById('session-terminated-modal');
+        this.terminatedAgentId = document.getElementById('terminated-agent-id');
+        this.btnTerminatedExit = document.getElementById('btn-terminated-exit');
 
         // Audio toggle
         this.audioBtn = document.getElementById('audio-toggle-btn');
@@ -104,6 +112,14 @@ class ParticipantApp {
         const logoutBtn = document.getElementById('logout-btn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => this.logout());
+        }
+
+        // Session Terminated Exit Button
+        if (this.btnTerminatedExit) {
+            this.btnTerminatedExit.addEventListener('click', () => {
+                this.logout();
+                window.location.reload();
+            });
         }
 
         // Level navigation clicks
@@ -180,9 +196,16 @@ class ParticipantApp {
         }
     }
 
-    handleRegistration(e) {
+    async handleRegistration(e) {
         e.preventDefault();
         window.escapeSound.click();
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const origBtnText = submitBtn ? submitBtn.innerHTML : '';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '⏳ GENERATING AGENT ID & CONNECTING TO CLOUD...';
+        }
 
         const formData = {
             name: document.getElementById('reg-name').value,
@@ -193,19 +216,26 @@ class ParticipantApp {
             email: document.getElementById('reg-email').value
         };
 
-        const participant = window.EscapeStorage.register(formData);
-        window.escapeSound.unlock();
-
-        this.showToast(`🎉 Registration Successful! Agent ID: ${participant.id}`, 'green');
-        
-        // Open the dedicated clearance pass page in a new window/tab for taking screenshot (SS)
+        let participant;
         try {
-            window.open(`pass.html?id=${encodeURIComponent(participant.id)}`, '_blank');
+            if (window.EscapeStorage && window.EscapeStorage.registerAsync) {
+                participant = await window.EscapeStorage.registerAsync(formData);
+            } else {
+                participant = window.EscapeStorage.register(formData);
+            }
         } catch (err) {
-            console.warn('Window open error', err);
+            participant = window.EscapeStorage.register(formData);
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = origBtnText;
+            }
         }
 
-        // Show prominent success banner with direct button to view/screenshot pass and enter vault
+        window.escapeSound.unlock();
+        this.showToast(`🎉 Registration Successful! Agent ID: ${participant.id}`, 'green');
+
+        // Show prominent success banner with direct button to enter vault
         const successBox = document.getElementById('reg-success-banner');
         if (successBox) {
             successBox.innerHTML = `
@@ -213,20 +243,15 @@ class ParticipantApp {
                     <div style="font-size: 0.85rem; color: var(--green-glow); font-family: var(--font-tech); text-transform: uppercase; letter-spacing: 0.1em;">
                         AGENT CLEARANCE ISSUED
                     </div>
-                    <div style="font-family: var(--font-mono); font-size: 2.2rem; font-weight: 800; color: #ffffff; margin: 0.35rem 0;">
+                    <div style="font-family: var(--font-mono); font-size: 2.4rem; font-weight: 800; color: #ffffff; margin: 0.35rem 0;">
                         ${participant.id}
                     </div>
                     <div style="font-size: 0.95rem; color: #cbd5e1; margin-bottom: 1.25rem;">
-                        Welcome Agent <strong>${participant.name}</strong>! Your clearance pass has been generated.
+                        Welcome Agent <strong>${participant.name}</strong>! Your Agent ID is <strong style="color: var(--green-glow);">${participant.id}</strong>.
                     </div>
-                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                        <a href="pass.html?id=${encodeURIComponent(participant.id)}" target="_blank" class="btn btn-outline" style="border-color: var(--amber-glow); color: #fff; font-weight: 700; width: 100%; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: rgba(255,183,3,0.15);">
-                            📸 OPEN & SCREENSHOT CLEARANCE PASS (SS) ↗
-                        </a>
-                        <button type="button" id="reg-auto-enter-btn" class="btn btn-green" style="width: 100%;">
-                            🔓 ENTER ESCAPE VAULT NOW →
-                        </button>
-                    </div>
+                    <button type="button" id="reg-auto-enter-btn" class="btn btn-green" style="width: 100%; padding: 0.9rem; font-weight: 700;">
+                        🔓 ENTER ESCAPE VAULT NOW →
+                    </button>
                 </div>
             `;
             successBox.classList.remove('hidden');
@@ -316,6 +341,19 @@ class ParticipantApp {
         this.participantNameDisplay.textContent = p.name;
         this.participantCollegeDisplay.textContent = `${p.college} • ${p.department} (${p.year})`;
 
+        // Check if participant has been Terminated due to expired time
+        if (p.status === 'Terminated') {
+            clearInterval(this.timerInterval);
+            this.timerDisplay.textContent = '00:00';
+            this.timerDisplay.classList.add('danger');
+            if (this.terminatedAgentId) this.terminatedAgentId.textContent = p.id;
+            if (this.terminatedModal) this.terminatedModal.classList.remove('hidden');
+            document.querySelectorAll('input, textarea, button:not(#btn-terminated-exit):not(#audio-toggle-btn)').forEach(el => {
+                el.disabled = true;
+            });
+            return;
+        }
+
         // Level Cards states
         this.updateLevelCardState(1, p.round1);
         this.updateLevelCardState(2, p.round2);
@@ -379,12 +417,19 @@ class ParticipantApp {
         if (p.round3.improvedPrompt) {
             this.r3PromptInput.value = p.round3.improvedPrompt;
             this.r3PromptInput.disabled = true;
+            if (this.r3WebsiteUrl) {
+                this.r3WebsiteUrl.value = p.round3.websiteUrl || '';
+                this.r3WebsiteUrl.disabled = true;
+            }
             this.r3SubmitBtn.disabled = true;
-            this.r3SubmitBtn.textContent = '🔒 FINAL PROMPT SUBMITTED';
+            this.r3SubmitBtn.textContent = '🔒 FINAL PROMPT & WEBSITE SUBMITTED';
             this.r3TerminalOutput.innerHTML = `
-                <div style="color: var(--green-glow);">✓ PROMPT ENGINEERING VERIFIED & SUBMITTED FOR JURY REVIEW.</div>
+                <div style="color: var(--green-glow); font-weight: 700;">✓ PROMPT ENGINEERING & LIVE WEBSITE SUBMITTED FOR JURY REVIEW.</div>
+                ${p.round3.websiteUrl ? `<div style="color: var(--cyan-glow); margin: 6px 0; font-family: var(--font-mono); font-size: 0.85rem;">🌐 Live Project: <a href="${p.round3.websiteUrl}" target="_blank" style="color: var(--cyan-glow); text-decoration: underline;">${p.round3.websiteUrl} ↗</a></div>` : ''}
                 <div style="color: #cbd5e1; margin-top: 6px;">Evaluation criteria: Clarity, Specificity, Creativity, Improvement, and Output Quality (/50).</div>
             `;
+        } else if (this.r3WebsiteUrl && p.round3.websiteUrl) {
+            this.r3WebsiteUrl.value = p.round3.websiteUrl;
         }
     }
 
@@ -491,15 +536,7 @@ class ParticipantApp {
         this.timerInterval = setInterval(() => {
             this.remainingSeconds--;
             if (this.remainingSeconds <= 0) {
-                clearInterval(this.timerInterval);
-                this.remainingSeconds = 0;
-                this.timerDisplay.textContent = '00:00';
-                this.timerDisplay.classList.add('danger');
-                window.escapeSound.error();
-                this.showToast('⚠️ Time Expired! Auto-submitting chamber prompt...', 'red');
-                if (roundNum === 1) this.submitRound1();
-                else if (roundNum === 2) this.submitRound2();
-                else if (roundNum === 3) this.submitRound3();
+                this.handleSessionTerminated(roundNum);
             } else {
                 this.updateTimerDisplay();
                 // Audio tick on last 30 seconds
@@ -508,6 +545,47 @@ class ParticipantApp {
                 }
             }
         }, 1000);
+    }
+
+    handleSessionTerminated(roundNum) {
+        clearInterval(this.timerInterval);
+        this.remainingSeconds = 0;
+        this.timerDisplay.textContent = '00:00';
+        this.timerDisplay.classList.add('danger');
+        
+        if (window.escapeSound) window.escapeSound.error();
+
+        // Lock all user inputs and action buttons in the entire page
+        document.querySelectorAll('input, textarea, button:not(#btn-terminated-exit):not(#audio-toggle-btn)').forEach(el => {
+            el.disabled = true;
+        });
+
+        // Mark participant status as Terminated in storage and sync globally to cloud
+        if (this.currentParticipant) {
+            const settings = window.EscapeStorage.getSettings();
+            const limit = settings[`r${roundNum}TimeLimit`] || (roundNum === 3 ? 15 * 60 : 10 * 60);
+            
+            this.currentParticipant = window.EscapeStorage.updateParticipant(this.currentParticipant.id, {
+                status: 'Terminated',
+                [`round${roundNum}`]: {
+                    ...this.currentParticipant[`round${roundNum}`],
+                    status: 'terminated',
+                    timeTakenSec: limit,
+                    evalStatus: 'rejected'
+                }
+            });
+
+            if (this.terminatedAgentId) {
+                this.terminatedAgentId.textContent = this.currentParticipant.id;
+            }
+        }
+
+        // Display the Emergency Lockdown Terminal Modal
+        if (this.terminatedModal) {
+            this.terminatedModal.classList.remove('hidden');
+        }
+
+        this.showToast('🚨 TIME EXPIRED! Web session terminated & vault sealed.', 'red');
     }
 
     updateTimerDisplay() {
@@ -989,12 +1067,13 @@ class ParticipantApp {
         if (personaMatches >= 2) personaScore = 20;
         else if (personaMatches === 1) personaScore = 12;
 
-        // 2. Core Symposium Features & Sections (up to 20%)
+        // 2. Core ERP Modules & Features (up to 20%)
         let featuresScore = 0;
         const featuresKeywords = [
-            'registration', 'register', 'events', 'schedule', 'timeline', 'gallery', 
-            'contact', 'sponsors', 'rules', 'faq', 'about', 'leaderboard', 'coordinator', 
-            'prizes', 'speakers', 'countdown', 'section'
+            'erp', 'attendance', 'marks', 'grades', 'gpa', 'timetable', 'schedule', 'fee', 
+            'fees', 'student', 'faculty', 'dashboard', 'portal', 'course', 'courses', 
+            'registration', 'register', 'profile', 'admin', 'notification', 'results', 
+            'events', 'timeline', 'gallery', 'contact', 'section'
         ];
         const featuresMatches = featuresKeywords.filter(k => lower.includes(k)).length;
         if (featuresMatches >= 3) featuresScore = 20;
@@ -1006,7 +1085,7 @@ class ParticipantApp {
         const designKeywords = [
             'responsive', 'mobile-friendly', 'dark mode', 'glassmorphism', 'cyberpunk', 
             'modern', 'minimalist', 'animations', 'interactive', 'navbar', 'hero section', 
-            'footer', 'color palette', 'typography', 'gradient', 'card', 'layout'
+            'footer', 'color palette', 'typography', 'gradient', 'card', 'layout', 'table', 'charts'
         ];
         const designMatches = designKeywords.filter(k => lower.includes(k)).length;
         if (designMatches >= 2) designScore = 20;
@@ -1017,7 +1096,7 @@ class ParticipantApp {
         const techKeywords = [
             'html', 'css', 'javascript', 'semantic html5', 'form validation', 'seo', 
             'accessible', 'wcag', 'clean code', 'performance', 'fast loading', 'grid', 
-            'flexbox', 'component', 'vanilla', 'framework', 'production'
+            'flexbox', 'component', 'vanilla', 'framework', 'production', 'database'
         ];
         const techMatches = techKeywords.filter(k => lower.includes(k)).length;
         if (techMatches >= 2) techScore = 20;
@@ -1035,9 +1114,9 @@ class ParticipantApp {
         const passed = totalPercentage >= 50;
 
         const feedback = [];
-        if (personaScore < 12) feedback.push('Assign an expert role (e.g. "Act as a Senior UI/UX Frontend Architect...")');
-        if (featuresScore < 15) feedback.push('Specify essential symposium sections (e.g. "registration form, event schedule, rules, contact...")');
-        if (designScore < 12) feedback.push('Define modern styling & layout (e.g. "responsive design, dark mode cyberpunk aesthetic, glassmorphism cards...")');
+        if (personaScore < 12) feedback.push('Assign an expert role (e.g. "Act as a Principal Enterprise Software Architect...")');
+        if (featuresScore < 15) feedback.push('Specify essential ERP modules (e.g. "student & faculty dashboards, attendance tracker, marks/GPA viewer, fee payment...")');
+        if (designScore < 12) feedback.push('Define modern styling & layout (e.g. "responsive design, dark/light theme, clean data tables & analytics charts...")');
         if (techScore < 12) feedback.push('Provide technical constraints (e.g. "semantic HTML5, responsive CSS grid, JavaScript form validation...")');
         if (depthScore < 14) feedback.push('Provide comprehensive prompt depth (avoid basic inputs like "hii")');
 
@@ -1078,10 +1157,26 @@ class ParticipantApp {
 
     submitRound3() {
         const promptVal = this.r3PromptInput.value.trim();
+        let websiteUrl = this.r3WebsiteUrl ? this.r3WebsiteUrl.value.trim() : '';
+
         if (!promptVal) {
             window.escapeSound.error();
             this.showToast('⚠️ Please engineer a detailed prompt to fix the original bad prompt!', 'amber');
             return;
+        }
+
+        // Validate website URL
+        if (!websiteUrl) {
+            window.escapeSound.error();
+            this.showToast('⚠️ Please enter your live website URL before submitting!', 'amber');
+            if (this.r3WebsiteUrl) this.r3WebsiteUrl.focus();
+            return;
+        }
+
+        // Auto-prepend https:// if protocol is omitted
+        if (!/^https?:\/\//i.test(websiteUrl)) {
+            websiteUrl = 'https://' + websiteUrl;
+            if (this.r3WebsiteUrl) this.r3WebsiteUrl.value = websiteUrl;
         }
 
         const evalResult = this.evaluateRound3Prompt(promptVal);
@@ -1114,12 +1209,12 @@ class ParticipantApp {
 
         window.escapeSound.gearTurn();
         this.r3SubmitBtn.disabled = true;
-        this.r3SubmitBtn.innerHTML = '⚙️ VALIDATING RE-ENGINEERED PROMPT...';
+        this.r3SubmitBtn.innerHTML = '⚙️ VALIDATING PROMPT & CONNECTING LIVE URL...';
 
         if (this.r3TerminalOutput) {
             this.r3TerminalOutput.innerHTML = `
                 <div style="color: var(--green-glow);">Analyzing re-engineered prompt architectural depth...</div>
-                <div style="color: var(--text-secondary); margin: 4px 0;">Evaluating technical constraints, symposium sections & UI styling...</div>
+                <div style="color: var(--cyan-glow); margin: 4px 0;">🔗 Linking live website repository / deployment: ${websiteUrl}</div>
                 <div style="color: var(--green-glow); font-size: 0.85rem; margin-top: 4px;">✓ Prompt engineering verification: ${evalResult.percentage}% (PASSED ≥ 50%)</div>
             `;
         }
@@ -1141,7 +1236,10 @@ class ParticipantApp {
             if (this.r3TerminalOutput) {
                 this.r3TerminalOutput.innerHTML = `
                     <div style="color: var(--green-glow); font-weight: 700; font-size: 1rem;">
-                        🏆 MASTER VAULT CLEARED! PROMPT VERIFIED
+                        🏆 MASTER VAULT CLEARED! GREETINGS & CONGRATULATIONS!
+                    </div>
+                    <div style="color: var(--cyan-glow); font-size: 0.85rem; margin-top: 4px;">
+                        🌐 Live Project Submitted: <a href="${websiteUrl}" target="_blank" style="color: var(--cyan-glow); text-decoration: underline;">${websiteUrl}</a>
                     </div>
                     <div style="color: #94a3b8; font-size: 0.8rem; margin-top: 4px;">
                         Master Prompt successfully evaluated! Quality Score: <strong style="color: var(--green-glow);">${evalResult.percentage}%</strong> | Marks: <strong style="color: #fff;">${scoreTotal}/50</strong>
@@ -1154,6 +1252,7 @@ class ParticipantApp {
                     ...this.currentParticipant.round3,
                     status: 'completed',
                     improvedPrompt: promptVal,
+                    websiteUrl: websiteUrl,
                     promptQualityScore: evalResult.percentage,
                     timeTakenSec: timeTaken,
                     submittedAt: new Date().toISOString(),
@@ -1170,21 +1269,94 @@ class ParticipantApp {
                 }
             });
 
-            this.showCelebration(
-                '🏆 MASTER VAULT CLEARED!',
-                `Incredible work! Your re-engineered prompt scored ${evalResult.percentage}% (Marks: ${scoreTotal}/50). You have successfully cleared all 3 Escape Chambers of PROMPT ESCAPE ROOM!`,
-                'VIEW VAULT CLEARANCE'
-            );
+            this.showRound3Greeting(this.currentParticipant, evalResult, websiteUrl, scoreTotal);
 
             this.renderParticipantState();
             clearInterval(this.timerInterval);
         }, 1500);
     }
 
+    showRound3Greeting(p, evalResult, websiteUrl, scoreTotal) {
+        if (!this.celebrationModal) return;
+
+        if (this.celebrationTrophy) {
+            this.celebrationTrophy.innerHTML = '🏆';
+        }
+
+        if (this.celebrationTitle) {
+            this.celebrationTitle.innerHTML = `
+                <div style="font-size: 1.05rem; color: var(--amber-glow); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.35rem; font-family: var(--font-tech);">🎉 GREETINGS & HEARTIEST CONGRATULATIONS! 🎉</div>
+                <div style="font-size: 1.55rem; color: #ffffff;">வாழ்த்துகள், ${p.name}! ✨</div>
+            `;
+        }
+
+        if (this.celebrationMsg) {
+            this.celebrationMsg.innerHTML = `
+                <div style="background: rgba(0, 255, 136, 0.08); border: 1px solid var(--green-glow); border-radius: var(--radius-md); padding: 1.15rem 1.25rem; margin-bottom: 1.25rem; text-align: left;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <span class="id-badge" style="font-size: 0.85rem;">AGENT ID: ${p.id}</span>
+                        <span class="badge badge-green">✓ ALL 3 CHAMBERS CLEARED</span>
+                    </div>
+                    <p style="color: #f1f5f9; font-size: 0.93rem; line-height: 1.55; margin-bottom: 0.85rem;">
+                        Outstanding achievement! You have mastered prompt engineering and successfully built your College ERP Portal. Your live demo project and re-engineered prompt are safely registered for jury evaluation.
+                    </p>
+                    <div style="background: rgba(5, 9, 18, 0.88); border: 1px solid rgba(0, 240, 255, 0.4); border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 0.6rem;">
+                        <div style="font-size: 0.75rem; color: var(--cyan-glow); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">
+                            🌐 SUBMITTED LIVE WEBSITE URL:
+                        </div>
+                        <a href="${websiteUrl}" target="_blank" style="color: #38bdf8; font-family: var(--font-mono); font-size: 0.88rem; word-break: break-all; text-decoration: underline; display: inline-flex; align-items: center; gap: 0.35rem;">
+                            <span>🔗</span> ${websiteUrl} <span style="font-size: 0.75rem;">↗</span>
+                        </a>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; color: #94a3b8; font-family: var(--font-tech); margin-top: 0.5rem; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 0.5rem;">
+                        <span>⚡ Prompt Quality: <strong style="color: var(--green-glow);">${evalResult.percentage}%</strong></span>
+                        <span>🏅 Rubric Marks: <strong style="color: #fff;">${scoreTotal}/50</strong></span>
+                    </div>
+                </div>
+            `;
+        }
+
+        if (this.celebrationActions) {
+            this.celebrationActions.innerHTML = `
+                <a href="${websiteUrl}" target="_blank" class="btn btn-cyan" style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.85rem; font-weight: 700;">
+                    <span>🚀</span> TEST YOUR LIVE WEBSITE ↗
+                </a>
+                <button id="celebration-next-btn" class="btn btn-green" style="width: 100%; padding: 0.85rem; margin-top: 0.25rem; font-weight: 700;">
+                    ✓ CONTINUE TO VAULT DASHBOARD
+                </button>
+            `;
+            const closeBtn = document.getElementById('celebration-next-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    this.celebrationModal.classList.add('hidden');
+                });
+            }
+        }
+
+        this.celebrationModal.classList.remove('hidden');
+    }
+
     showCelebration(title, msg, btnText) {
-        this.celebrationTitle.textContent = title;
-        this.celebrationMsg.textContent = msg;
-        this.celebrationNextBtn.textContent = btnText;
+        if (!this.celebrationModal) return;
+        if (this.celebrationTrophy) {
+            this.celebrationTrophy.innerHTML = '🎉';
+        }
+        this.celebrationTitle.innerHTML = title;
+        this.celebrationMsg.innerHTML = `<p style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.75rem;">${msg}</p>`;
+        
+        if (this.celebrationActions) {
+            this.celebrationActions.innerHTML = `
+                <button id="celebration-next-btn" class="btn btn-cyan" style="width: 100%; padding: 0.85rem;">
+                    ${btnText}
+                </button>
+            `;
+            const closeBtn = document.getElementById('celebration-next-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    this.celebrationModal.classList.add('hidden');
+                });
+            }
+        }
         this.celebrationModal.classList.remove('hidden');
     }
 
@@ -1213,4 +1385,11 @@ class ParticipantApp {
 
 document.addEventListener('DOMContentLoaded', () => {
     window.participantApp = new ParticipantApp();
+
+    // Background cloud sync every 4s so when admin shortlists/approves, room unlocks in real-time
+    setInterval(() => {
+        if (window.EscapeStorage && window.EscapeStorage.syncFromCloud) {
+            window.EscapeStorage.syncFromCloud();
+        }
+    }, 4000);
 });

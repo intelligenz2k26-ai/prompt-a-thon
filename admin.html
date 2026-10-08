@@ -24,17 +24,101 @@
         </a>
 
         <div class="nav-actions">
+            <div id="cloud-sync-status" class="sync-status-badge" title="Live Global Cloud Sync Active">
+                <span class="sync-dot"></span>
+                <span>GLOBAL SYNC ACTIVE</span>
+            </div>
+            <button id="admin-sync-btn" class="btn btn-sm btn-outline" title="Sync now with cloud">
+                🔄 Sync
+            </button>
             <button id="admin-export-btn" class="btn btn-sm btn-cyan">
                 📊 Export CSV
             </button>
             <a href="index.html" class="btn btn-sm btn-green">
                 🎮 Participant View
             </a>
+            <button id="admin-logout-btn" class="btn btn-sm btn-outline" style="border-color: rgba(255, 82, 82, 0.4); color: #ff5252;">
+                🚪 Logout
+            </button>
         </div>
     </nav>
 
+    <!-- ============================================================
+         RESTRICTED TERMINAL - ADMIN AUTHENTICATION GATE
+         ============================================================ -->
+    <div id="admin-auth-overlay" class="admin-auth-overlay">
+        <div class="restricted-terminal-card" id="terminal-card">
+            <div class="restricted-shield-badge">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#00f0ff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="M9 12l2 2 4-4" stroke="#00ff88" stroke-width="2.2"/>
+                </svg>
+            </div>
+
+            <h1 class="terminal-header-title">
+                RESTRICTED <span class="cyan-word">TERMINAL</span>
+            </h1>
+            <div class="terminal-header-sub">
+                INTELLI-GENZ 2K26 // COMMAND DESK AUTHORIZATION
+            </div>
+
+            <form id="admin-auth-form" autocomplete="off">
+                <div class="terminal-form-group">
+                    <label class="terminal-label" for="admin-operator-id">
+                        <span>👤</span> OPERATOR ID
+                    </label>
+                    <div class="terminal-input-wrap">
+                        <input 
+                            type="text" 
+                            id="admin-operator-id" 
+                            class="terminal-input" 
+                            value="admin" 
+                            placeholder="Operator ID"
+                            required
+                        />
+                    </div>
+                </div>
+
+                <div class="terminal-form-group">
+                    <label class="terminal-label" for="admin-security-key">
+                        <span>🔑</span> SECURITY KEY
+                    </label>
+                    <div class="terminal-input-wrap">
+                        <input 
+                            type="password" 
+                            id="admin-security-key" 
+                            class="terminal-input" 
+                            placeholder="••••••••" 
+                            required
+                        />
+                        <button type="button" id="toggle-key-visibility" class="terminal-toggle-btn" title="Toggle password visibility">
+                            👁️
+                        </button>
+                    </div>
+                </div>
+
+                <div id="admin-auth-error" class="terminal-error-msg">
+                    ⛔ ACCESS DENIED: Invalid Operator ID or Security Key
+                </div>
+
+                <button type="submit" class="terminal-submit-btn" id="btn-admin-auth">
+                    <span>🔒</span> AUTHENTICATE & ENTER DESK →
+                </button>
+            </form>
+
+            <hr class="terminal-divider">
+
+            <div class="terminal-footer-notice">
+                ℹ️ AUTHORIZED PERSONNEL ONLY
+            </div>
+            <a href="index.html" class="terminal-return-link">
+                ← Return to Public Portal
+            </a>
+        </div>
+    </div>
+
     <!-- Admin Layout -->
-    <div class="admin-layout">
+    <div class="admin-layout" id="admin-layout">
 
         <!-- Sidebar Navigation -->
         <aside class="admin-sidebar">
@@ -499,7 +583,9 @@
     <div id="toast-container" class="toast-container"></div>
 
     <!-- Scripts -->
+    <script src="js/ai-bg.js"></script>
     <script src="js/storage.js"></script>
+    <script src="js/sound.js"></script>
     <script src="js/poster-gen.js"></script>
     <script src="js/admin.js"></script>
 </body>
