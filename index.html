@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROMPT ESCAPE ROOM 🔐 | Technical Symposium Challenge</title>
+    <meta name="description" content="Cyberpunk Prompt Engineering Escape Room Challenge - Solve CAPTCHA prompts, synthesize awareness posters, and re-engineer prompts to unlock chambers.">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/participant.css">
+</head>
+<body>
+
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <a href="index.html" class="brand-badge">
+            <div class="brand-icon">🔐</div>
+            <div>
+                <div class="brand-title">PROMPT ESCAPE ROOM</div>
+                <div class="brand-tagline">Collegiate Prompt Engineering Challenge</div>
+            </div>
+        </a>
+
+        <div class="nav-actions">
+            <button id="audio-toggle-btn" class="audio-btn" title="Toggle Sound Synthesizer">
+                🔊 Audio: ON
+            </button>
+            <button id="logout-btn" class="btn btn-sm btn-red hidden">
+                Exit Vault
+            </button>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTAINER -->
+    <main class="escape-wrapper">
+
+        <!-- ============================================================
+             SECTION 1: AUTHENTICATION / REGISTRATION & PARTICIPANT LOGIN
+             ============================================================ -->
+        <section id="auth-section">
+            <div class="glass-panel portal-auth-card">
+                <div class="text-center" style="margin-bottom: 1.5rem;">
+                    <div style="font-size: 3rem; margin-bottom: 0.5rem;">🔐</div>
+                    <h1 style="font-size: 1.6rem; letter-spacing: 0.1em;">PROMPT ESCAPE ROOM</h1>
+                    <p class="font-tech text-cyan" style="font-size: 0.95rem; margin-top: 0.35rem;">
+                        3 LEVELS • 3 CHALLENGES • CRACK THE VAULT
+                    </p>
+                </div>
+
+                <!-- Registration Success Banner (shown after submit) -->
+                <div id="reg-success-banner" class="hidden"></div>
+
+                <!-- Navigation Tabs -->
+                <div class="portal-tabs">
+                    <button id="tab-reg-btn" class="portal-tab-btn active">📝 REGISTER PARTICIPANT</button>
+                    <button id="tab-login-btn" class="portal-tab-btn">⚡ ENTER ESCAPE VAULT</button>
+                </div>
+
+                <!-- 1. Registration Box -->
+                <div id="reg-box">
+                    <form id="registration-form">
+                        <div class="form-group">
+                            <label class="form-label" for="reg-name">Full Name *</label>
+                            <input type="text" id="reg-name" class="form-input" placeholder="e.g. Surya" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="reg-college">College Name *</label>
+                            <input type="text" id="reg-college" class="form-input" placeholder="e.g. MCE" required>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label class="form-label" for="reg-department">Department *</label>
+                                <input type="text" id="reg-department" class="form-input" placeholder="e.g. CSE / IT / AIDS" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="reg-year">Year of Study *</label>
+                                <select id="reg-year" class="form-select" required>
+                                    <option value="I">I Year</option>
+                                    <option value="II">II Year</option>
+                                    <option value="III" selected>III Year</option>
+                                    <option value="IV">IV Year</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="reg-phone">Phone Number *</label>
+                            <input type="tel" id="reg-phone" class="form-input" placeholder="e.g. 9876543210" pattern="[0-9]{10}" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="reg-email">Email Address *</label>
+                            <input type="email" id="reg-email" class="form-input" placeholder="e.g. surya@mce.edu" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-cyan" style="width: 100%; margin-top: 1rem; padding: 0.9rem;">
+                            🔒 SUBMIT & GENERATE PARTICIPANT ID
+                        </button>
+                    </form>
+                </div>
+
+                <!-- 2. Participant Login Box -->
+                <div id="login-box" class="hidden">
+                    <div style="background: rgba(0, 240, 255, 0.05); border-left: 3px solid var(--cyan-glow); padding: 0.9rem 1.2rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem; font-size: 0.88rem; color: #cbd5e1;">
+                        Enter your auto-generated Participant ID (e.g. <strong>P001</strong>). Once approved by the event coordinator/admin, the Chamber doors will unlock.
+                    </div>
+
+                    <form id="login-form">
+                        <div class="form-group">
+                            <label class="form-label" for="login-participant-id">Participant ID / Agent Code *</label>
+                            <input type="text" id="login-participant-id" class="form-input font-mono" placeholder="e.g. P001" style="font-size: 1.2rem; text-transform: uppercase;" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-green" style="width: 100%; margin-top: 1rem; padding: 0.9rem;">
+                            🔓 ACCESS ESCAPE CHAMBER
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             SECTION 2: PARTICIPANT ESCAPE ROOM INTERFACE
+             ============================================================ -->
+        <section id="escape-section" class="hidden">
+            
+            <!-- Vault Status Header HUD -->
+            <div class="vault-header">
+                <div class="vault-status-grid">
+                    
+                    <!-- Agent Details -->
+                    <div class="agent-id-badge">
+                        <div class="agent-avatar">🤖</div>
+                        <div class="agent-details">
+                            <div style="font-size: 0.75rem; color: var(--cyan-glow); font-family: var(--font-tech); text-transform: uppercase;">
+                                AGENT ID: <span id="participant-id-display" class="font-mono" style="font-weight: 700;">P001</span>
+                            </div>
+                            <div id="participant-name-display" class="name">Surya</div>
+                            <div id="participant-college-display" class="meta">MCE • CSE (III)</div>
+                        </div>
+                    </div>
+
+                    <!-- Central Rotating Lock Dial -->
+                    <div class="central-lock-hud">
+                        <div id="lock-dial-visual" class="lock-dial-visual">
+                            <div class="lock-dial-ring"></div>
+                            <span id="lock-icon-glyph" class="lock-icon-glyph">🔐</span>
+                        </div>
+                        <div class="lock-hud-title">LOCK STATUS</div>
+                    </div>
+
+                    <!-- Countdown Timer -->
+                    <div class="vault-timer-box">
+                        <div class="timer-label">CHAMBER TIME REMAINING</div>
+                        <div id="vault-timer" class="timer-display">05:00</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-tech);">
+                            AUTO-LOCK SECURITY ENGAGED
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Level Progress Bar [████████████░░░░] -->
+                <div class="chamber-progress-container">
+                    <div class="chamber-progress-header">
+                        <span>VAULT CLEARANCE PROGRESS</span>
+                        <span id="progress-percentage-text" style="color: var(--cyan-glow); font-weight: 700;">33% VAULT CLEARED</span>
+                    </div>
+                    <div class="progress-track">
+                        <div id="level-progress-fill" class="progress-fill" style="width: 33%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3 Vault Chambers Navigation Cards -->
+            <div class="levels-selector-grid">
+                
+                <!-- Level 1 Card -->
+                <div id="level-card-1" class="level-card active">
+                    <div class="level-card-top">
+                        <span class="level-card-badge level-1-badge">LEVEL 01</span>
+                        <span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-cyan);">5 MIN</span>
+                    </div>
+                    <div class="level-title">🟢 EASY 🔐</div>
+                    <div class="level-desc">CAPTCHA Code Decryption with Precision AI Prompting.</div>
+                    <div class="level-state-status">
+                        <span id="level-1-status-tag">⚡ <span style="color: var(--cyan-glow);">ACTIVE CHAMBER</span></span>
+                    </div>
+                </div>
+
+                <!-- Level 2 Card -->
+                <div id="level-card-2" class="level-card locked-card">
+                    <div class="level-card-top">
+                        <span class="level-card-badge level-2-badge">LEVEL 02</span>
+                        <span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--amber-glow);">10 MIN</span>
+                    </div>
+                    <div class="level-title">🟡 MEDIUM 🔐</div>
+                    <div class="level-desc">Problem Statement → AI Awareness Poster Generation.</div>
+                    <div class="level-state-status">
+                        <span id="level-2-status-tag">🔒 <span style="color: var(--text-muted);">TOP 5 CANDIDATES ONLY</span></span>
+                    </div>
+                </div>
+
+                <!-- Level 3 Card -->
+                <div id="level-card-3" class="level-card locked-card">
+                    <div class="level-card-top">
+                        <span class="level-card-badge level-3-badge">LEVEL 03</span>
+                        <span style="font-family: var(--font-mono); font-size: 0.8rem; color: #ff3377;">10 MIN</span>
+                    </div>
+                    <div class="level-title">🔴 HARD 🔐</div>
+                    <div class="level-desc">"Fix The Prompt" — Master Level Prompt Re-Engineering.</div>
+                    <div class="level-state-status">
+                        <span id="level-3-status-tag">🔒 <span style="color: var(--text-muted);">TOP 10 FINALISTS ONLY</span></span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ============================================================
+                 CHAMBER 1 INTERFACE: CAPTCHA + PROMPT
+                 ============================================================ -->
+            <div id="chamber-round-1" class="chamber-panel">
+                <div class="chamber-header-band">
+                    <div class="chamber-title-group">
+                        <h2>🟢 ROUND 1 — EASY 🔐</h2>
+                        <div class="chamber-subheading">
+                            Challenge: CAPTCHA + Prompt | Time Allotted: 5 Minutes
+                        </div>
+                    </div>
+                    <div>
+                        <span class="badge badge-cyan">SECURITY LOCK 01</span>
+                    </div>
+                </div>
+
+                <div class="captcha-chamber-layout">
+                    <!-- Left: Security CAPTCHA Token Display -->
+                    <div class="captcha-card">
+                        <div style="font-family: var(--font-tech); font-size: 0.85rem; color: var(--cyan-glow); letter-spacing: 0.1em; margin-bottom: 0.75rem;">
+                            🔐 SECURITY LOCK TARGET
+                        </div>
+                        <canvas id="r1-captcha-canvas" width="340" height="110"></canvas>
+                        <div class="challenge-prompt-hint">
+                            <strong>MISSION DIRECTIVE:</strong><br>
+                            “Read the distorted security code and create a prompt that asks AI to identify the code correctly.”
+                        </div>
+                    </div>
+
+                    <!-- Right: Prompt Input & AI Terminal -->
+                    <div>
+                        <div class="form-group">
+                            <label class="form-label" for="r1-prompt-input">
+                                <span>YOUR AI DECRYPTION PROMPT:</span>
+                                <span style="color: var(--cyan-glow); font-size: 0.8rem;">ENGINEERED INPUT</span>
+                            </label>
+                            <textarea id="r1-prompt-input" class="form-textarea" placeholder="Example: You are an optical character recognition expert. Carefully analyze the distorted characters in the security badge and extract the exact 5-character token..."></textarea>
+                            <div id="r1-quality-meter" style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; padding: 0.4rem 0.75rem; background: rgba(5, 9, 18, 0.7); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 0.82rem; font-family: var(--font-tech);">
+                                <span id="r1-quality-label" style="color: var(--text-muted);">
+                                    ⚡ PROMPT QUALITY SCORE: <strong id="r1-quality-pct" style="color: #ff5252;">0%</strong> (Need ≥ 50%)
+                                </span>
+                                <span id="r1-quality-badge" class="badge badge-red" style="font-size: 0.72rem;">INSUFFICIENT (MIN 50%)</span>
+                            </div>
+                        </div>
+
+                        <button id="r1-submit-btn" class="btn btn-green" style="width: 100%;">
+                            🔓 SUBMIT PROMPT & UNLOCK CODE
+                        </button>
+
+                        <!-- Simulated AI Terminal Output -->
+                        <div id="r1-ai-terminal" class="ai-terminal">
+                            <div class="terminal-header">
+                                <div class="terminal-dots">
+                                    <span class="terminal-dot dot-red"></span>
+                                    <span class="terminal-dot dot-yellow"></span>
+                                    <span class="terminal-dot dot-green"></span>
+                                </div>
+                                <span>AI NEURAL DECRYPTOR [v2.4]</span>
+                            </div>
+                            <div id="r1-terminal-output" class="terminal-body">
+                                <div>Awaiting participant prompt submission...</div>
+                                <span class="terminal-cursor"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================================
+                 CHAMBER 2 INTERFACE: PS → IMAGE CREATION
+                 ============================================================ -->
+            <div id="chamber-round-2" class="chamber-panel hidden">
+                <div class="chamber-header-band">
+                    <div class="chamber-title-group">
+                        <h2>🟡 ROUND 2 — MEDIUM 🔐</h2>
+                        <div class="chamber-subheading">
+                            Challenge: Problem Statement → AI Image Generation | Time Allotted: 10 Minutes
+                        </div>
+                    </div>
+                    <div>
+                        <span class="badge badge-amber">SHORTLISTED TOP 5 CANDIDATES</span>
+                    </div>
+                </div>
+
+                <!-- Problem Statement Card -->
+                <div class="problem-statement-card">
+                    <div class="ps-label">🎯 PROBLEM STATEMENT (PS)</div>
+                    <div class="ps-text">
+                        “Create an awareness poster for a college anti-drug campaign.”
+                    </div>
+                    <div style="font-size: 0.85rem; color: #cbd5e1; margin-top: 0.5rem;">
+                        <strong>Expected:</strong> Proper poster theme, College-friendly design, Inspiring message, Visual aesthetics & typography details.
+                    </div>
+                </div>
+
+                <div class="r2-layout">
+                    <!-- Left: Prompt Drafting -->
+                    <div>
+                        <div class="form-group">
+                            <label class="form-label" for="r2-prompt-input">
+                                <span>AI IMAGE GENERATION PROMPT:</span>
+                                <span style="color: var(--amber-glow); font-size: 0.8rem;">MIDJOURNEY / DALL-E STYLE</span>
+                            </label>
+                            <textarea id="r2-prompt-input" class="form-textarea" style="min-height: 160px;" placeholder="Describe the scene, subject, aesthetic lighting, student silhouettes, emotional contrast, typography headers ('BREAK THE CHAIN'), color palette, and college context in depth..."></textarea>
+                            <div id="r2-quality-meter" style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; padding: 0.4rem 0.75rem; background: rgba(5, 9, 18, 0.7); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 0.82rem; font-family: var(--font-tech);">
+                                <span id="r2-quality-label" style="color: var(--text-muted);">
+                                    ⚡ PROMPT QUALITY SCORE: <strong id="r2-quality-pct" style="color: #ff5252;">0%</strong> (Need ≥ 50%)
+                                </span>
+                                <span id="r2-quality-badge" class="badge badge-red" style="font-size: 0.72rem;">INSUFFICIENT (MIN 50%)</span>
+                            </div>
+                        </div>
+
+                        <button id="r2-submit-btn" class="btn btn-amber" style="width: 100%;">
+                            🎨 SYNTHESIZE POSTER & UNLOCK CHAMBER 2
+                        </button>
+
+                        <div id="r2-ai-terminal" class="ai-terminal" style="margin-top: 1rem;">
+                            <div class="terminal-header">
+                                <div class="terminal-dots">
+                                    <span class="terminal-dot dot-red"></span>
+                                    <span class="terminal-dot dot-yellow"></span>
+                                    <span class="terminal-dot dot-green"></span>
+                                </div>
+                                <span>AI POSTER SYNTHESIZER [v2.4]</span>
+                            </div>
+                            <div id="r2-terminal-output" class="terminal-body">
+                                <div>Awaiting poster prompt submission...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Neural Poster Preview -->
+                    <div class="poster-preview-card">
+                        <div style="font-family: var(--font-tech); font-size: 0.85rem; color: var(--cyan-glow); margin-bottom: 0.75rem;">
+                            AI POSTER RENDER OUTPUT
+                        </div>
+                        <canvas id="r2-poster-canvas" class="poster-preview-canvas" width="600" height="840"></canvas>
+                        
+                        <div id="r2-gen-overlay" class="hidden" style="position: absolute; inset: 0; background: rgba(5, 8, 16, 0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: var(--radius-md);">
+                            <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">⚡</div>
+                            <div style="font-family: var(--font-heading); color: var(--cyan-glow); font-size: 1.1rem;">NEURAL POSTER SYNTHESIS...</div>
+                            <div style="font-size: 0.85rem; color: #cbd5e1; margin-top: 0.4rem;">Applying youth anti-drug composition & cinematic lighting</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================================
+                 CHAMBER 3 INTERFACE: FIX THE BAD PROMPT
+                 ============================================================ -->
+            <div id="chamber-round-3" class="chamber-panel hidden">
+                <div class="chamber-header-band">
+                    <div class="chamber-title-group">
+                        <h2>🔴 ROUND 3 — HARD 🔐</h2>
+                        <div class="chamber-subheading">
+                            Challenge: “FIX THE PROMPT” | Time Allotted: 10 Minutes
+                        </div>
+                    </div>
+                    <div>
+                        <span class="badge badge-red">TOP 10 FINALISTS</span>
+                    </div>
+                </div>
+
+                <div class="r3-split-card">
+                    <!-- Bad Prompt -->
+                    <div class="bad-prompt-box">
+                        <div class="prompt-box-header" style="color: #ff5252;">
+                            ❌ ORIGINAL BAD PROMPT
+                        </div>
+                        <div style="font-family: var(--font-mono); font-size: 1.15rem; color: #ff6b6b; font-weight: 700; margin-bottom: 0.75rem;">
+                            "Make a good college website"
+                        </div>
+                        <p style="font-size: 0.85rem; color: #cbd5e1;">
+                            <strong>Why it fails:</strong> Extremely vague, lacks target audience, misses responsive specifications, has zero information architecture or event features.
+                        </p>
+                    </div>
+
+                    <!-- Target Directive -->
+                    <div class="fixed-prompt-box">
+                        <div class="prompt-box-header" style="color: var(--green-glow);">
+                            🎯 MISSION: TRANSFORM INTO AN EXPERT PROMPT
+                        </div>
+                        <p style="font-size: 0.88rem; color: #cbd5e1; line-height: 1.6;">
+                            Re-engineer this prompt by specifying symposium details, responsive design, schedules, registration workflows, visual glassmorphism aesthetic, and tech audience persona.
+                        </p>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="form-group">
+                        <label class="form-label" for="r3-prompt-input">
+                            <span>YOUR RE-ENGINEERED MASTER PROMPT:</span>
+                            <span style="color: var(--green-glow); font-size: 0.8rem;">FINAL ROUND SUBMISSION</span>
+                        </label>
+                        <textarea id="r3-prompt-input" class="form-textarea" style="min-height: 140px;" placeholder="Create a modern responsive website for a college technical symposium with event details, registration, schedule, gallery and contact sections..."></textarea>
+                        <div id="r3-quality-meter" style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; padding: 0.4rem 0.75rem; background: rgba(5, 9, 18, 0.7); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 0.82rem; font-family: var(--font-tech);">
+                            <span id="r3-quality-label" style="color: var(--text-muted);">
+                                ⚡ PROMPT QUALITY SCORE: <strong id="r3-quality-pct" style="color: #ff5252;">0%</strong> (Need ≥ 50%)
+                            </span>
+                            <span id="r3-quality-badge" class="badge badge-red" style="font-size: 0.72rem;">INSUFFICIENT (MIN 50%)</span>
+                        </div>
+                    </div>
+
+                    <button id="r3-submit-btn" class="btn btn-green" style="width: 100%;">
+                        🏆 SUBMIT MASTER PROMPT & CLEAR FINAL VAULT
+                    </button>
+
+                    <div class="ai-terminal" style="margin-top: 1.25rem;">
+                        <div class="terminal-header">
+                            <span>PROMPT RE-ENGINEERING EVALUATION SYSTEM</span>
+                        </div>
+                        <div id="r3-terminal-output" class="terminal-body">
+                            <div>Awaiting participant's improved prompt submission...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- ============================================================
+         UNLOCK CELEBRATION MODAL
+         ============================================================ -->
+    <div id="unlock-celebration-modal" class="unlock-celebration-modal hidden">
+        <div class="unlock-celebration-card">
+            <div class="unlock-trophy-ring">🎉</div>
+            <h2 id="celebration-title" style="font-size: 1.7rem; color: #ffffff; margin-bottom: 0.75rem;">
+                LOCK UNLOCKED!
+            </h2>
+            <p id="celebration-msg" style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.6; margin-bottom: 2rem;">
+                Chamber unlocked successfully.
+            </p>
+            <button id="celebration-next-btn" class="btn btn-cyan" style="width: 100%; padding: 0.85rem;">
+                CONTINUE
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="js/storage.js"></script>
+    <script src="js/sound.js"></script>
+    <script src="js/captcha.js"></script>
+    <script src="js/poster-gen.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

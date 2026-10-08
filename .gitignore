@@ -1,0 +1,34 @@
+# Operating System Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor & IDE configurations
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.snapshots/
+
+# Node & Package Managers
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files
+.env
+.env*.local
+
+# Vercel deployment cache & metadata
+.vercel
+
+# Cloudflare deployment cache & metadata
+.wrangler/
+.mf/
+
+# Build artifacts & logs
+dist/
+build/
+*.log

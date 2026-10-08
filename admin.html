@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROMPT ESCAPE ROOM 🛡️ | Admin Command Console</title>
+    <meta name="description" content="Admin evaluation and management portal for Prompt Escape Room - oversee registrations, evaluate prompts across Round 1, Round 2, Round 3, and view jury leaderboards.">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="css/participant.css">
+</head>
+<body>
+
+    <!-- Admin Top Nav -->
+    <nav class="top-nav">
+        <a href="admin.html" class="brand-badge">
+            <div class="brand-icon" style="border-color: var(--amber-glow); box-shadow: 0 0 15px rgba(255,183,3,0.3);">🛡️</div>
+            <div>
+                <div class="brand-title">ADMIN COMMAND CONSOLE</div>
+                <div class="brand-tagline">Prompt Escape Room Jury & Coordinator Suite</div>
+            </div>
+        </a>
+
+        <div class="nav-actions">
+            <button id="admin-export-btn" class="btn btn-sm btn-cyan">
+                📊 Export CSV
+            </button>
+            <a href="index.html" class="btn btn-sm btn-green">
+                🎮 Participant View
+            </a>
+        </div>
+    </nav>
+
+    <!-- Admin Layout -->
+    <div class="admin-layout">
+
+        <!-- Sidebar Navigation -->
+        <aside class="admin-sidebar">
+            <div>
+                <div class="sidebar-brand-title">NAVIGATION ROUTES</div>
+                <ul class="sidebar-nav-list">
+                    <li>
+                        <a href="#/registrations" class="sidebar-link active" data-route="registrations">
+                            <span class="icon">📋</span>
+                            <span>Registration</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#/round-1" class="sidebar-link" data-route="round-1">
+                            <span class="icon">🔐</span>
+                            <span>Round 1 (Easy)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#/round-2" class="sidebar-link" data-route="round-2">
+                            <span class="icon">🖼️</span>
+                            <span>Round 2 (Medium)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#/round-3" class="sidebar-link" data-route="round-3">
+                            <span class="icon">🧠</span>
+                            <span>Round 3 (Hard)</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#/results" class="sidebar-link" data-route="results">
+                            <span class="icon">🏆</span>
+                            <span>Leaderboard & Podium</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Admin Notice at Bottom -->
+            <div style="background: rgba(0, 0, 0, 0.4); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); font-size: 0.8rem; color: var(--text-muted);">
+                <div style="color: var(--cyan-glow); font-weight: 700; margin-bottom: 0.25rem;">CONFIDENTIAL</div>
+                Leaderboard & marks are strictly restricted to Jury / Admin per guidelines.
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="admin-main">
+
+            <!-- Top Statistics Counter -->
+            <div class="admin-stats-grid">
+                <div class="stat-card stat-reg">
+                    <div>
+                        <div class="stat-info-title">👥 Registered</div>
+                        <div id="stat-registered-count" class="stat-info-count">0</div>
+                    </div>
+                    <div class="stat-icon">👥</div>
+                </div>
+
+                <div class="stat-card stat-r1">
+                    <div>
+                        <div class="stat-info-title">🟢 Round 1</div>
+                        <div id="stat-r1-count" class="stat-info-count">0</div>
+                    </div>
+                    <div class="stat-icon">🔐</div>
+                </div>
+
+                <div class="stat-card stat-r2">
+                    <div>
+                        <div class="stat-info-title">🟡 Round 2</div>
+                        <div id="stat-r2-count" class="stat-info-count">0</div>
+                    </div>
+                    <div class="stat-icon">🖼️</div>
+                </div>
+
+                <div class="stat-card stat-r3">
+                    <div>
+                        <div class="stat-info-title">🔴 Round 3 (Top 10)</div>
+                        <div id="stat-r3-count" class="stat-info-count">0</div>
+                    </div>
+                    <div class="stat-icon">🏆</div>
+                </div>
+            </div>
+
+            <!-- ============================================================
+                 ROUTE 1: /admin/registrations
+                 ============================================================ -->
+            <section id="view-registrations">
+                <div class="admin-page-header">
+                    <h1>📋 Participant Registrations</h1>
+                </div>
+
+                <div class="header-tools admin-toolbar-row">
+                    <div class="toolbar-left">
+                        <button class="btn btn-sm btn-red" onclick="adminApp.deleteSelected('reg')" title="Delete selected participants">
+                            🗑️ DELETE
+                        </button>
+                        <button id="btn-find-duplicates" class="btn btn-sm btn-amber" onclick="adminApp.toggleFilterDuplicates()" title="Find duplicate names, phones or emails">
+                            ⚠️ Highlight Duplicates
+                        </button>
+                    </div>
+                    <div class="toolbar-center">
+                        <div class="search-input-wrap">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" class="table-search-input" placeholder="Search ID, Name, College, Phone...">
+                        </div>
+                    </div>
+                    <div class="toolbar-right">
+                        <button class="btn btn-sm btn-green" onclick="adminApp.approveSelected('reg')" title="Approve selected participants">
+                            ✓ APPROVE
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Batch Actions Bar (shown when checkboxes are selected) -->
+                <div id="reg-batch-actions" class="hidden batch-actions-bar batch-actions-reg">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span style="font-size: 1.2rem;">📋</span>
+                        <span id="reg-selected-count" style="font-weight: 700; color: #fff; font-family: var(--font-tech); letter-spacing: 0.05em;">0 PARTICIPANTS SELECTED</span>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <button class="btn btn-sm btn-green" onclick="adminApp.approveSelected('reg')">
+                            ✓ Approve Selected
+                        </button>
+                        <button class="btn btn-sm btn-red" onclick="adminApp.deleteSelected('reg')">
+                            🗑️ Delete Selected
+                        </button>
+                        <button class="btn btn-sm btn-outline" onclick="adminApp.clearSelection('reg')">
+                            ✕ Cancel
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px; text-align: center;">
+                                    <input type="checkbox" id="select-all-reg" onchange="adminApp.toggleSelectAll('reg', this)" title="Select All" style="cursor: pointer; width: 16px; height: 16px;">
+                                </th>
+                                <th>Participant ID</th>
+                                <th>Name</th>
+                                <th>College</th>
+                                <th>Department / Year</th>
+                                <th>Contact</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reg-table-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ============================================================
+                 ROUTE 2: /admin/round-1 (Submissions List)
+                 ============================================================ -->
+            <section id="view-round-1" class="hidden">
+                <div class="admin-page-header">
+                    <h1>🔐 Round 1 — Easy (CAPTCHA + Prompt)</h1>
+                </div>
+
+                <div class="header-tools admin-toolbar-row">
+                    <div class="toolbar-left">
+                        <button class="btn btn-sm btn-red" onclick="adminApp.deleteSelected(1)" title="Delete selected participants">
+                            🗑️ DELETE
+                        </button>
+                    </div>
+                    <div class="toolbar-center">
+                        <div class="search-input-wrap">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" class="table-search-input" placeholder="Search participants...">
+                        </div>
+                    </div>
+                    <div class="toolbar-right">
+                        <button class="btn btn-sm btn-green" onclick="adminApp.approveSelected(1)" title="Approve selected candidates for Round 2">
+                            ✓ APPROVE
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Batch Actions Bar for Round 1 -->
+                <div id="r1-batch-actions" class="hidden batch-actions-bar batch-actions-r1">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span style="font-size: 1.2rem;">🔐</span>
+                        <span id="r1-selected-count" style="font-weight: 700; color: #fff; font-family: var(--font-tech); letter-spacing: 0.05em;">0 CANDIDATES SELECTED</span>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <button class="btn btn-sm btn-green" onclick="adminApp.approveSelected(1)">
+                            ✓ Approve & Shortlist for R2
+                        </button>
+                        <button class="btn btn-sm btn-red" onclick="adminApp.deleteSelected(1)">
+                            🗑️ Delete Selected
+                        </button>
+                        <button class="btn btn-sm btn-outline" onclick="adminApp.clearSelection(1)">
+                            ✕ Cancel
+                        </button>
+                    </div>
+                </div>
+
+                <div style="background: rgba(0, 240, 255, 0.05); border-left: 3px solid var(--cyan-glow); padding: 0.85rem 1.25rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem; font-size: 0.88rem;">
+                    <strong>Round 1 Directive:</strong> Evaluate the candidate's prompt engineering quality (minimum <strong>50%</strong> gate required) and accuracy in cracking their unique 5-character security CAPTCHA token. Score out of <strong>/40</strong> and select the <strong>Top 5</strong> candidates for Round 2.
+                </div>
+
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px; text-align: center;">
+                                    <input type="checkbox" id="select-all-r1" onchange="adminApp.toggleSelectAll(1, this)" title="Select All" style="cursor: pointer; width: 16px; height: 16px;">
+                                </th>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>College</th>
+                                <th>Submission State</th>
+                                <th>Score (/40)</th>
+                                <th>Evaluation</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="r1-table-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ============================================================
+                 ROUTE 2B: /admin/round-1/evaluate (Score Rubric)
+                 ============================================================ -->
+            <section id="view-round-1-eval" class="hidden">
+                <div id="r1-eval-container">
+                    <!-- Populated dynamically -->
+                </div>
+            </section>
+
+            <!-- ============================================================
+                 ROUTE 3: /admin/round-2 (Submissions List - Top 5)
+                 ============================================================ -->
+            <section id="view-round-2" class="hidden">
+                <div class="admin-page-header">
+                    <h1>🖼️ Round 2 — Medium (PS → Image Creation)</h1>
+                </div>
+
+                <div class="header-tools admin-toolbar-row">
+                    <div class="toolbar-left">
+                        <button class="btn btn-sm btn-red" onclick="adminApp.deleteSelected(2)" title="Delete selected participants">
+                            🗑️ DELETE
+                        </button>
+                    </div>
+                    <div class="toolbar-center">
+                        <div class="search-input-wrap">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" class="table-search-input" placeholder="Search Top 5 candidates...">
+                        </div>
+                    </div>
+                    <div class="toolbar-right">
+                        <button class="btn btn-sm btn-green" onclick="adminApp.approveSelected(2)" title="Approve selected candidates for Round 3">
+                            ✓ APPROVE
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Batch Actions Bar for Round 2 -->
+                <div id="r2-batch-actions" class="hidden batch-actions-bar batch-actions-r2">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span style="font-size: 1.2rem;">🖼️</span>
+                        <span id="r2-selected-count" style="font-weight: 700; color: #fff; font-family: var(--font-tech); letter-spacing: 0.05em;">0 CANDIDATES SELECTED</span>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <button class="btn btn-sm btn-green" onclick="adminApp.approveSelected(2)">
+                            ✓ Approve & Shortlist for R3
+                        </button>
+                        <button class="btn btn-sm btn-red" onclick="adminApp.deleteSelected(2)">
+                            🗑️ Delete Selected
+                        </button>
+                        <button class="btn btn-sm btn-outline" onclick="adminApp.clearSelection(2)">
+                            ✕ Cancel
+                        </button>
+                    </div>
+                </div>
+
+                <div style="background: rgba(255, 183, 3, 0.06); border-left: 3px solid var(--amber-glow); padding: 0.85rem 1.25rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem; font-size: 0.88rem;">
+                    <strong>Round 2 Directive:</strong> Evaluate anti-drug awareness poster generation prompts. Score out of <strong>/40</strong> and select the <strong>Top 10</strong> finalists for Round 3.
+                </div>
+
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px; text-align: center;">
+                                    <input type="checkbox" id="select-all-r2" onchange="adminApp.toggleSelectAll(2, this)" title="Select All" style="cursor: pointer; width: 16px; height: 16px;">
+                                </th>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>College</th>
+                                <th>Submission State</th>
+                                <th>Score (/40)</th>
+                                <th>Evaluation</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="r2-table-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ============================================================
+                 ROUTE 3B: /admin/round-2/evaluate (Score Rubric & Poster Preview)
+                 ============================================================ -->
+            <section id="view-round-2-eval" class="hidden">
+                <div id="r2-eval-container">
+                    <!-- Populated dynamically -->
+                </div>
+            </section>
+
+            <!-- ============================================================
+                 ROUTE 4: /admin/round-3 (Submissions List - Top 10)
+                 ============================================================ -->
+            <section id="view-round-3" class="hidden">
+                <div class="admin-page-header">
+                    <h1>🧠 Round 3 — Hard (Fix The Prompt)</h1>
+                </div>
+
+                <div class="header-tools admin-toolbar-row">
+                    <div class="toolbar-left">
+                        <button class="btn btn-sm btn-red" onclick="adminApp.deleteSelected(3)" title="Delete selected participants">
+                            🗑️ DELETE
+                        </button>
+                    </div>
+                    <div class="toolbar-center">
+                        <div class="search-input-wrap">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" class="table-search-input" placeholder="Search Top 10 finalists...">
+                        </div>
+                    </div>
+                    <div class="toolbar-right">
+                        <button class="btn btn-sm btn-green" onclick="adminApp.approveSelected(3)" title="Approve selected finalists">
+                            ✓ APPROVE
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Batch Actions Bar for Round 3 -->
+                <div id="r3-batch-actions" class="hidden batch-actions-bar batch-actions-r3">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span style="font-size: 1.2rem;">🧠</span>
+                        <span id="r3-selected-count" style="font-weight: 700; color: #fff; font-family: var(--font-tech); letter-spacing: 0.05em;">0 FINALISTS SELECTED</span>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <button class="btn btn-sm btn-green" onclick="adminApp.approveSelected(3)">
+                            ✓ Approve Winners
+                        </button>
+                        <button class="btn btn-sm btn-red" onclick="adminApp.deleteSelected(3)">
+                            🗑️ Delete Selected
+                        </button>
+                        <button class="btn btn-sm btn-outline" onclick="adminApp.clearSelection(3)">
+                            ✕ Cancel
+                        </button>
+                    </div>
+                </div>
+
+                <div style="background: rgba(255, 0, 85, 0.06); border-left: 3px solid #ff0055; padding: 0.85rem 1.25rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem; font-size: 0.88rem;">
+                    <strong>Round 3 Directive:</strong> Evaluate re-engineered prompts that fix <em>"Make a good college website"</em>. Score out of <strong>/50</strong> and designate <strong>1st WINNER</strong>, <strong>2nd RUNNER</strong>, and <strong>3rd PLACE</strong>.
+                </div>
+
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px; text-align: center;">
+                                    <input type="checkbox" id="select-all-r3" onchange="adminApp.toggleSelectAll(3, this)" title="Select All" style="cursor: pointer; width: 16px; height: 16px;">
+                                </th>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>College</th>
+                                <th>Submission State</th>
+                                <th>Score (/50)</th>
+                                <th>Award Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="r3-table-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ============================================================
+                 ROUTE 4B: /admin/round-3/evaluate (Final Score Rubric)
+                 ============================================================ -->
+            <section id="view-round-3-eval" class="hidden">
+                <div id="r3-eval-container">
+                    <!-- Populated dynamically -->
+                </div>
+            </section>
+
+            <!-- ============================================================
+                 ROUTE 5: /admin/results (Secret Jury Leaderboard & Podium)
+                 ============================================================ -->
+            <section id="view-results" class="hidden">
+                <div class="admin-page-header">
+                    <h1>🏆 Final Results & Jury Leaderboard</h1>
+                </div>
+
+                <div class="header-tools admin-toolbar-row">
+                    <div class="toolbar-left">
+                        <span style="color: var(--text-muted); font-size: 0.85rem; font-family: var(--font-tech);">FINAL RANKINGS</span>
+                    </div>
+                    <div class="toolbar-center">
+                        <div class="search-input-wrap">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" class="table-search-input" placeholder="Search ID, Name, College...">
+                        </div>
+                    </div>
+                    <div class="toolbar-right">
+                        <span class="badge badge-amber">JURY EYES ONLY</span>
+                    </div>
+                </div>
+
+                <!-- Winners Podium (1st, 2nd, 3rd) -->
+                <div id="results-podium" class="leaderboard-podium">
+                    <!-- Populated dynamically -->
+                </div>
+
+                <!-- Overall Consolidated Table -->
+                <h3 style="font-size: 1.1rem; color: var(--cyan-glow); margin: 2rem 0 1rem;">
+                    CONSOLIDATED PERFORMANCE MATRIX
+                </h3>
+
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>College</th>
+                                <th>R1 (/40)</th>
+                                <th>R2 (/40)</th>
+                                <th>R3 (/50)</th>
+                                <th>Overall Aggregate</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-table-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="js/storage.js"></script>
+    <script src="js/poster-gen.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>
