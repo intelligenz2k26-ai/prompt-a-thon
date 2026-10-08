@@ -1,6 +1,6 @@
 /**
  * PROMPT ESCAPE ROOM - Central Storage & Data Engine
- * Manages participant registration, rounds progress, submissions, evaluation scores, and demo data.
+ * Manages participant registration, rounds progress, submissions, evaluation scores, and real-time cloud sync.
  */
 
 const STORAGE_KEYS = {
@@ -24,53 +24,14 @@ const DEFAULT_SETTINGS = {
     r3BadPrompt: 'Make a good college website'
 };
 
-// Initial state loader
 const Storage = {
     getParticipants() {
-        // One-time cleanup of old mock dataset if present
-        if (!localStorage.getItem('prompt_escape_clean_v2')) {
-            const existing = localStorage.getItem(STORAGE_KEYS.PARTICIPANTS);
-            if (existing) {
-                try {
-                    const parsed = JSON.parse(existing);
-                    if (Array.isArray(parsed)) {
-                        const isMockBatch = parsed.length >= 19 && parsed.some(p => p.id === 'P001' && p.round3 && p.round3.finalRank);
-                        if (isMockBatch) {
-                            localStorage.setItem(STORAGE_KEYS.PARTICIPANTS, JSON.stringify([]));
-                        }
-                    }
-                } catch(e) {}
-            }
-            localStorage.setItem('prompt_escape_clean_v2', 'true');
-        }
-
         const data = localStorage.getItem(STORAGE_KEYS.PARTICIPANTS);
-        if (!data) {
-            return [];
-        }
+        if (!data) return [];
         try {
             let parsed = JSON.parse(data);
-            if (!Array.isArray(parsed)) {
-                return [];
-            }
-
-            parsed = parsed.filter(p => p && p.id);
-
-            // Ensure every registered participant has a unique CAPTCHA code based on email/id
-            let needsSave = false;
-            parsed.forEach(p => {
-                if (p.round1 && !p.round1.captchaCode) {
-                    p.round1.captchaCode = this.generateCaptchaCode(p.email || p.id);
-                    if (p.round1.aiOutput && (p.round1.aiOutput === '7KQ9P' || !p.round1.aiOutput)) {
-                        p.round1.aiOutput = p.round1.captchaCode;
-                    }
-                    needsSave = true;
-                }
-            });
-            if (needsSave) {
-                localStorage.setItem(STORAGE_KEYS.PARTICIPANTS, JSON.stringify(parsed));
-            }
-            return parsed;
+            if (!Array.isArray(parsed)) return [];
+            return parsed.filter(p => p && p.id);
         } catch (e) {
             console.error('Error parsing participants', e);
             return [];
@@ -102,54 +63,102 @@ const Storage = {
         return code;
     },
 
-    CLOUD_ENDPOINT: 'https://kvdb.io/7WSqXoKQGY5BLvRnc6bmqT/participants',
+    // Endpoints: Same-origin API is primary; kvdb.io is secondary fallback
+    PRIMARY_ENDPOINT: '/api/participants',
+    FALLBACK_ENDPOINT: 'https://kvdb.io/7WSqXoKQGY5BLvRnc6bmqT/participants',
     _isSyncing: false,
     _lastCloudSyncTime: 0,
 
-    getCloudUrl() {
+    async fetchCloudData() {
         const ts = Date.now();
-        const rand = Math.random().toString(36).substring(2, 9);
-        return `${this.CLOUD_ENDPOINT}?_t=${ts}&_r=${rand}`;
+        const rand = Math.random().toString(36).substring(2, 7);
+
+        // 1. Try Same-Origin /api/participants
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 4000);
+            const res = await fetch(`${this.PRIMARY_ENDPOINT}?_t=${ts}&_r=${rand}`, {
+                cache: 'no-store',
+                headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' },
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data)) return data;
+            }
+        } catch (e) {}
+
+        // 2. Fallback to external KV
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 4000);
+            const res = await fetch(`${this.FALLBACK_ENDPOINT}?_t=${ts}&_r=${rand}`, {
+                cache: 'no-store',
+                headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' },
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data)) return data;
+            }
+        } catch (e) {}
+
+        return null;
+    },
+
+    async pushCloudData(list) {
+        let success = false;
+        const payload = JSON.stringify(list);
+
+        // 1. Push to Same-Origin /api/participants
+        try {
+            const res = await fetch(this.PRIMARY_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+                body: payload
+            });
+            if (res.ok) success = true;
+        } catch (e) {}
+
+        // 2. Push to Fallback KV
+        try {
+            const res = await fetch(this.FALLBACK_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+                body: payload
+            });
+            if (res.ok) success = true;
+        } catch (e) {}
+
+        return success;
     },
 
     async syncFromCloud() {
         if (this._isSyncing) return this.getParticipants();
         this._isSyncing = true;
         try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 8000);
-            const res = await fetch(this.getCloudUrl(), { 
-                cache: 'no-store',
-                headers: {
-                    'Cache-Control': 'no-cache, no-store, must-revalidate',
-                    'Pragma': 'no-cache'
-                },
-                signal: controller.signal 
-            });
-            clearTimeout(timeoutId);
-            
-            if (res.ok) {
-                const cloudList = await res.json();
-                if (Array.isArray(cloudList)) {
-                    const localList = this.getParticipants();
-                    const merged = this.mergeParticipants(localList, cloudList);
-                    
-                    const localJson = JSON.stringify(localList);
-                    const mergedJson = JSON.stringify(merged);
-                    
-                    if (localJson !== mergedJson) {
-                        localStorage.setItem(STORAGE_KEYS.PARTICIPANTS, mergedJson);
-                        try {
-                            window.dispatchEvent(new CustomEvent('escape_room_data_changed', { detail: { source: 'cloud' } }));
-                        } catch (e) {}
-                    }
-                    
-                    this._lastCloudSyncTime = Date.now();
-                    return merged;
+            const cloudList = await this.fetchCloudData();
+            if (Array.isArray(cloudList)) {
+                const localList = this.getParticipants();
+                const merged = this.mergeParticipants(localList, cloudList);
+                
+                const localJson = JSON.stringify(localList);
+                const mergedJson = JSON.stringify(merged);
+                
+                if (localJson !== mergedJson) {
+                    localStorage.setItem(STORAGE_KEYS.PARTICIPANTS, mergedJson);
+                    try {
+                        window.dispatchEvent(new CustomEvent('escape_room_data_changed', { detail: { source: 'cloud' } }));
+                    } catch (e) {}
                 }
+                
+                this._lastCloudSyncTime = Date.now();
+                return merged;
             }
         } catch (e) {
-            console.warn('Sync from cloud notice:', e.message || e);
+            console.warn('Cloud sync error:', e);
         } finally {
             this._isSyncing = false;
         }
@@ -160,42 +169,19 @@ const Storage = {
         let toSend = participants || this.getParticipants();
 
         try {
-            // Fetch fresh remote cloud data using cache-buster and merge first
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 6000);
-                const checkRes = await fetch(this.getCloudUrl(), { 
-                    cache: 'no-store',
-                    headers: {
-                        'Cache-Control': 'no-cache, no-store, must-revalidate',
-                        'Pragma': 'no-cache'
-                    },
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
-                if (checkRes.ok) {
-                    const remoteList = await checkRes.json();
-                    if (Array.isArray(remoteList) && remoteList.length > 0) {
-                        toSend = this.mergeParticipants(toSend, remoteList);
-                        localStorage.setItem(STORAGE_KEYS.PARTICIPANTS, JSON.stringify(toSend));
-                    }
-                }
-            } catch (mergeErr) {}
-
-            const postRes = await fetch(this.CLOUD_ENDPOINT, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Cache-Control': 'no-cache, no-store, must-revalidate'
-                },
-                body: JSON.stringify(toSend)
-            });
-            if (postRes.ok) {
-                this._lastCloudSyncTime = Date.now();
+            // First fetch latest cloud data and merge
+            const remoteList = await this.fetchCloudData();
+            if (Array.isArray(remoteList) && remoteList.length > 0) {
+                toSend = this.mergeParticipants(toSend, remoteList);
+                localStorage.setItem(STORAGE_KEYS.PARTICIPANTS, JSON.stringify(toSend));
             }
+
+            // Push merged payload to cloud
+            await this.pushCloudData(toSend);
+            this._lastCloudSyncTime = Date.now();
             return toSend;
         } catch (e) {
-            console.warn('Cloud sync error:', e);
+            console.warn('Sync to cloud error:', e);
             return toSend;
         }
     },
@@ -241,10 +227,7 @@ const Storage = {
         localStorage.setItem(STORAGE_KEYS.PARTICIPANTS, JSON.stringify(participants));
         try {
             window.dispatchEvent(new CustomEvent('escape_room_data_changed'));
-        } catch (e) {
-            console.warn('Dispatch event error', e);
-        }
-        // Immediately sync to global cloud so admin & all users see it
+        } catch (e) {}
         this.syncToCloud(participants);
     },
 
@@ -269,43 +252,24 @@ const Storage = {
     async deleteParticipant(id) {
         if (!id) return;
         const normId = String(id).toUpperCase().trim();
-        let list = this.getParticipants();
-        list = list.filter(p => p.id.toUpperCase() !== normId);
+        let list = this.getParticipants().filter(p => p.id.toUpperCase() !== normId);
         localStorage.setItem(STORAGE_KEYS.PARTICIPANTS, JSON.stringify(list));
         try {
             window.dispatchEvent(new CustomEvent('escape_room_data_changed'));
         } catch (e) {}
-
-        // Directly update cloud with deletion
-        try {
-            await fetch(this.CLOUD_ENDPOINT, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(list)
-            });
-        } catch (e) {}
+        await this.pushCloudData(list);
         return list;
     },
 
     async deleteParticipants(ids) {
         if (!ids || ids.length === 0) return;
         const set = new Set(ids.map(i => String(i).toUpperCase().trim()));
-
-        let list = this.getParticipants();
-        list = list.filter(p => !set.has(p.id.toUpperCase()));
+        let list = this.getParticipants().filter(p => !set.has(p.id.toUpperCase()));
         localStorage.setItem(STORAGE_KEYS.PARTICIPANTS, JSON.stringify(list));
         try {
             window.dispatchEvent(new CustomEvent('escape_room_data_changed'));
         } catch (e) {}
-
-        // Directly update cloud with deletion
-        try {
-            await fetch(this.CLOUD_ENDPOINT, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(list)
-            });
-        } catch (e) {}
+        await this.pushCloudData(list);
         return list;
     },
 
@@ -333,64 +297,45 @@ const Storage = {
             phone: (data.phone || '').trim(),
             email: (data.email || '').trim(),
             registeredAt: new Date().toISOString(),
-            status: 'Approved', // Auto-approved so participants can immediately play Round 1!
+            status: 'Approved',
             
             // Round 1
             round1: {
-                status: 'unlocked', // 'locked' | 'unlocked' | 'completed'
+                status: 'unlocked',
                 captchaCode: this.generateCaptchaCode((data.email || id).trim()),
                 prompt: '',
                 aiOutput: '',
                 promptQualityScore: 0,
                 timeTakenSec: 0,
                 submittedAt: null,
-                score: {
-                    quality: 0,
-                    correctness: 0,
-                    creativity: 0,
-                    time: 0,
-                    total: 0
-                },
+                score: { quality: 0, correctness: 0, creativity: 0, time: 0, total: 0 },
                 evaluated: false,
-                evalStatus: 'pending' // 'pending' | 'selected' | 'rejected'
+                evalStatus: 'pending'
             },
 
             // Round 2
             round2: {
-                status: 'locked', // 'locked' | 'unlocked' | 'completed'
+                status: 'locked',
                 prompt: '',
                 generatedPosterUrl: '',
                 timeTakenSec: 0,
                 submittedAt: null,
-                score: {
-                    promptQuality: 0,
-                    understanding: 0,
-                    creativity: 0,
-                    imageQuality: 0,
-                    total: 0
-                },
+                score: { promptQuality: 0, understanding: 0, creativity: 0, imageQuality: 0, total: 0 },
                 evaluated: false,
-                evalStatus: 'pending' // 'pending' | 'selected' | 'rejected'
+                evalStatus: 'pending'
             },
 
             // Round 3
             round3: {
-                status: 'locked', // 'locked' | 'unlocked' | 'completed'
+                status: 'locked',
                 improvedPrompt: '',
                 websiteUrl: '',
                 promptQualityScore: 0,
                 timeTakenSec: 0,
                 submittedAt: null,
-                score: {
-                    clarity: 0,
-                    specificity: 0,
-                    creativity: 0,
-                    improvement: 0,
-                    outputQuality: 0,
-                    total: 0
-                },
+                score: { clarity: 0, specificity: 0, creativity: 0, improvement: 0, outputQuality: 0, total: 0 },
                 evaluated: false,
-                evalStatus: 'pending', // 'pending' | 'winner' | 'runner' | 'third' | 'rejected'
+                evalStatus: 'pending',
                 finalRank: null
             }
         };
@@ -407,7 +352,6 @@ const Storage = {
     },
 
     async registerAsync(data) {
-        // Sync with global cloud first to ensure latest participants list and calculate correct ID
         let cloudList = [];
         try {
             cloudList = await this.syncFromCloud();
@@ -419,7 +363,6 @@ const Storage = {
         let localList = this.getParticipants().filter(p => p.id !== newId);
         localList.push(newParticipant);
         
-        // Save local & sync to cloud
         localStorage.setItem(STORAGE_KEYS.PARTICIPANTS, JSON.stringify(localList));
         try {
             window.dispatchEvent(new CustomEvent('escape_room_data_changed'));
@@ -482,18 +425,10 @@ const Storage = {
             window.dispatchEvent(new CustomEvent('escape_room_data_changed'));
         } catch (e) {}
 
-        // Push empty array to cloud
-        try {
-            await fetch(this.CLOUD_ENDPOINT, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify([])
-            });
-        } catch (e) {}
+        await this.pushCloudData([]);
         return [];
     },
 
-    // Demo Data generation with 20 realistic participants representing various stages
     generateSampleData() {
         const raw = [
             { id: "P001", name: "bala", college: "MCE", dept: "CSE", yr: "III", ph: "9876543210", em: "bala@mce.edu" },
@@ -521,15 +456,10 @@ const Storage = {
         return raw.map((item, index) => {
             const isApproved = index < 18;
             const r1Submitted = isApproved && index < 16;
-            
-            // Top 14 shortlisted for R2
             const isShortlistedR2 = index < 14;
             const r2Submitted = isShortlistedR2;
-            
-            // Top 10 shortlisted for R3
             const top10Ids = ['P012', 'P007', 'P004', 'P001', 'P002', 'P003', 'P005', 'P006', 'P008', 'P009'];
             const isTop10 = top10Ids.includes(item.id);
-            const r3Submitted = isTop10;
 
             const r3Prompts = {
                 'P012': `Design an ultra-modern, high-performance responsive web portal for a national collegiate technical symposium named 'INNOVEX 2026'. Include: Hero section with glowing countdown timer and 3D geometric canvas, interactive event schedule matrix with track filters, seamless multi-stage registration modal, guest keynote showcase, live campus coordinates, and accessible dark mode glassmorphism UI tailored for tech undergraduates.`,
@@ -621,11 +551,11 @@ const Storage = {
 
 window.EscapeStorage = Storage;
 
-// Auto-sync with cloud on load so participants and admin share real-time state globally
+// Auto-sync with cloud on startup
 try {
     setTimeout(() => {
         if (typeof Storage !== 'undefined' && Storage.syncFromCloud) {
             Storage.syncFromCloud();
         }
-    }, 150);
+    }, 100);
 } catch (e) {}

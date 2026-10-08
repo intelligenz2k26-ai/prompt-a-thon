@@ -162,18 +162,18 @@ class AdminController {
         };
 
         // Initial sync with slight delay
-        setTimeout(doSync, 500);
+        setTimeout(doSync, 300);
 
-        // 10s polling when focused, 30s when backgrounded (reduces lag)
-        let pollTimer = setInterval(doSync, 10000);
+        // Fast 4s polling when focused, 15s when backgrounded
+        let pollTimer = setInterval(doSync, 4000);
 
         document.addEventListener('visibilitychange', () => {
             clearInterval(pollTimer);
             if (document.hidden) {
-                pollTimer = setInterval(doSync, 30000);
+                pollTimer = setInterval(doSync, 15000);
             } else {
                 doSync();
-                pollTimer = setInterval(doSync, 10000);
+                pollTimer = setInterval(doSync, 4000);
             }
         });
     }
