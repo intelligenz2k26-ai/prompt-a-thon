@@ -7,9 +7,13 @@ const STORAGE_KEYS = {
     PARTICIPANTS: 'prompt_escape_participants',
     SETTINGS: 'prompt_escape_settings',
     CURRENT_USER: 'prompt_escape_current_user',
-    ADMIN_SESSION: 'prompt_escape_admin_auth',
-    DELETED_IDS: 'prompt_escape_deleted_ids'
+    ADMIN_SESSION: 'prompt_escape_admin_auth'
 };
+
+// Immediately purge any legacy deleted IDs blacklist to prevent drop bugs
+try {
+    localStorage.removeItem('prompt_escape_deleted_ids');
+} catch (e) {}
 
 const DEFAULT_SETTINGS = {
     r1TimeLimit: 5 * 60,  // 5 mins in seconds (Lock 1)
@@ -22,27 +26,9 @@ const DEFAULT_SETTINGS = {
 
 // Initial state loader
 const Storage = {
-    getDeletedIds() {
-        try {
-            const raw = localStorage.getItem(STORAGE_KEYS.DELETED_IDS);
-            return new Set(raw ? JSON.parse(raw) : []);
-        } catch (e) {
-            return new Set();
-        }
-    },
-
-    markAsDeleted(ids) {
-        const deleted = this.getDeletedIds();
-        (Array.isArray(ids) ? ids : [ids]).forEach(id => {
-            if (id) deleted.add(String(id).toUpperCase().trim());
-        });
-        localStorage.setItem(STORAGE_KEYS.DELETED_IDS, JSON.stringify(Array.from(deleted)));
-        return deleted;
-    },
-
     getParticipants() {
         // One-time cleanup of old mock dataset if present
-        if (!localStorage.getItem('prompt_escape_clean_v1')) {
+        if (!localStorage.getItem('prompt_escape_clean_v2')) {
             const existing = localStorage.getItem(STORAGE_KEYS.PARTICIPANTS);
             if (existing) {
                 try {
@@ -55,7 +41,7 @@ const Storage = {
                     }
                 } catch(e) {}
             }
-            localStorage.setItem('prompt_escape_clean_v1', 'true');
+            localStorage.setItem('prompt_escape_clean_v2', 'true');
         }
 
         const data = localStorage.getItem(STORAGE_KEYS.PARTICIPANTS);
@@ -68,8 +54,7 @@ const Storage = {
                 return [];
             }
 
-            const deletedIds = this.getDeletedIds();
-            parsed = parsed.filter(p => p && p.id && !deletedIds.has(String(p.id).toUpperCase().trim()));
+            parsed = parsed.filter(p => p && p.id);
 
             // Ensure every registered participant has a unique CAPTCHA code based on email/id
             let needsSave = false;
@@ -159,12 +144,6 @@ const Storage = {
                         } catch (e) {}
                     }
                     
-                    const deletedIds = this.getDeletedIds();
-                    const cloudHasDeleted = cloudList.some(p => p && p.id && deletedIds.has(String(p.id).toUpperCase().trim()));
-                    if (cloudHasDeleted) {
-                        this.syncToCloud(merged, true);
-                    }
-                    
                     this._lastCloudSyncTime = Date.now();
                     return merged;
                 }
@@ -177,34 +156,31 @@ const Storage = {
         return this.getParticipants();
     },
 
-    async syncToCloud(participants, isDelete = false) {
-        const deletedIds = this.getDeletedIds();
-        let toSend = (participants || this.getParticipants()).filter(p => !deletedIds.has(String(p.id).toUpperCase().trim()));
+    async syncToCloud(participants) {
+        let toSend = participants || this.getParticipants();
 
         try {
-            if (!isDelete) {
-                // Fetch fresh remote cloud data using cache-buster and merge
-                try {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 6000);
-                    const checkRes = await fetch(this.getCloudUrl(), { 
-                        cache: 'no-store',
-                        headers: {
-                            'Cache-Control': 'no-cache, no-store, must-revalidate',
-                            'Pragma': 'no-cache'
-                        },
-                        signal: controller.signal
-                    });
-                    clearTimeout(timeoutId);
-                    if (checkRes.ok) {
-                        const remoteList = await checkRes.json();
-                        if (Array.isArray(remoteList) && remoteList.length > 0) {
-                            toSend = this.mergeParticipants(toSend, remoteList);
-                            localStorage.setItem(STORAGE_KEYS.PARTICIPANTS, JSON.stringify(toSend));
-                        }
+            // Fetch fresh remote cloud data using cache-buster and merge first
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 6000);
+                const checkRes = await fetch(this.getCloudUrl(), { 
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    },
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                if (checkRes.ok) {
+                    const remoteList = await checkRes.json();
+                    if (Array.isArray(remoteList) && remoteList.length > 0) {
+                        toSend = this.mergeParticipants(toSend, remoteList);
+                        localStorage.setItem(STORAGE_KEYS.PARTICIPANTS, JSON.stringify(toSend));
                     }
-                } catch (mergeErr) {}
-            }
+                }
+            } catch (mergeErr) {}
 
             const postRes = await fetch(this.CLOUD_ENDPOINT, {
                 method: 'POST',
@@ -225,17 +201,16 @@ const Storage = {
     },
 
     mergeParticipants(local, remote) {
-        const deletedIds = this.getDeletedIds();
         const map = new Map();
 
         (local || []).forEach(p => {
-            if (p && p.id && !deletedIds.has(String(p.id).toUpperCase().trim())) {
+            if (p && p.id) {
                 map.set(String(p.id).toUpperCase().trim(), p);
             }
         });
 
         (remote || []).forEach(p => {
-            if (!p || !p.id || deletedIds.has(String(p.id).toUpperCase().trim())) return;
+            if (!p || !p.id) return;
             const key = String(p.id).toUpperCase().trim();
             if (!map.has(key)) {
                 map.set(key, p);
@@ -294,8 +269,6 @@ const Storage = {
     async deleteParticipant(id) {
         if (!id) return;
         const normId = String(id).toUpperCase().trim();
-        this.markAsDeleted(normId);
-
         let list = this.getParticipants();
         list = list.filter(p => p.id.toUpperCase() !== normId);
         localStorage.setItem(STORAGE_KEYS.PARTICIPANTS, JSON.stringify(list));
@@ -303,13 +276,19 @@ const Storage = {
             window.dispatchEvent(new CustomEvent('escape_room_data_changed'));
         } catch (e) {}
 
-        await this.syncToCloud(list, true);
+        // Directly update cloud with deletion
+        try {
+            await fetch(this.CLOUD_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(list)
+            });
+        } catch (e) {}
         return list;
     },
 
     async deleteParticipants(ids) {
         if (!ids || ids.length === 0) return;
-        this.markAsDeleted(ids);
         const set = new Set(ids.map(i => String(i).toUpperCase().trim()));
 
         let list = this.getParticipants();
@@ -319,28 +298,34 @@ const Storage = {
             window.dispatchEvent(new CustomEvent('escape_room_data_changed'));
         } catch (e) {}
 
-        await this.syncToCloud(list, true);
+        // Directly update cloud with deletion
+        try {
+            await fetch(this.CLOUD_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(list)
+            });
+        } catch (e) {}
         return list;
     },
 
-    getNextId() {
+    getNextId(additionalList = []) {
         const list = this.getParticipants();
-        const deletedIds = Array.from(this.getDeletedIds());
-        const allIds = [...list.map(p => p.id), ...deletedIds];
-        if (allIds.length === 0) return 'P001';
-        const nums = allIds.map(id => {
-            const match = String(id).match(/\d+/);
+        const combined = [...list, ...(additionalList || [])];
+        if (combined.length === 0) return 'P001';
+        
+        const nums = combined.map(p => {
+            if (!p || !p.id) return 0;
+            const match = String(p.id).match(/\d+/);
             return match ? parseInt(match[0], 10) : 0;
         });
         const max = Math.max(...nums, 0);
         return `P${String(max + 1).padStart(3, '0')}`;
     },
 
-    register(data) {
-        const list = this.getParticipants();
-        const newId = this.getNextId();
-        const newParticipant = {
-            id: newId,
+    createParticipantObject(data, id) {
+        return {
+            id: id,
             name: (data.name || '').trim(),
             college: (data.college || '').trim(),
             department: (data.department || '').trim(),
@@ -353,7 +338,7 @@ const Storage = {
             // Round 1
             round1: {
                 status: 'unlocked', // 'locked' | 'unlocked' | 'completed'
-                captchaCode: this.generateCaptchaCode((data.email || newId).trim()),
+                captchaCode: this.generateCaptchaCode((data.email || id).trim()),
                 prompt: '',
                 aiOutput: '',
                 promptQualityScore: 0,
@@ -409,6 +394,12 @@ const Storage = {
                 finalRank: null
             }
         };
+    },
+
+    register(data) {
+        const list = this.getParticipants();
+        const newId = this.getNextId();
+        const newParticipant = this.createParticipantObject(data, newId);
 
         list.push(newParticipant);
         this.saveParticipants(list);
@@ -416,18 +407,25 @@ const Storage = {
     },
 
     async registerAsync(data) {
-        // Sync with global cloud first to ensure latest participants list and no duplicate IDs
+        // Sync with global cloud first to ensure latest participants list and calculate correct ID
+        let cloudList = [];
         try {
-            await this.syncFromCloud();
+            cloudList = await this.syncFromCloud();
         } catch (e) {}
         
-        const newParticipant = this.register(data);
+        const newId = this.getNextId(cloudList);
+        const newParticipant = this.createParticipantObject(data, newId);
         
-        // Immediately push to cloud and await confirmation so it reaches admin instantly
+        let localList = this.getParticipants().filter(p => p.id !== newId);
+        localList.push(newParticipant);
+        
+        // Save local & sync to cloud
+        localStorage.setItem(STORAGE_KEYS.PARTICIPANTS, JSON.stringify(localList));
         try {
-            await this.syncToCloud();
+            window.dispatchEvent(new CustomEvent('escape_room_data_changed'));
         } catch (e) {}
-        
+
+        await this.syncToCloud(localList);
         return newParticipant;
     },
 
@@ -477,11 +475,20 @@ const Storage = {
         }
     },
 
-    resetAllData() {
+    async resetAllData() {
         localStorage.setItem(STORAGE_KEYS.PARTICIPANTS, JSON.stringify([]));
         localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
         try {
             window.dispatchEvent(new CustomEvent('escape_room_data_changed'));
+        } catch (e) {}
+
+        // Push empty array to cloud
+        try {
+            await fetch(this.CLOUD_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify([])
+            });
         } catch (e) {}
         return [];
     },
@@ -622,4 +629,3 @@ try {
         }
     }, 150);
 } catch (e) {}
-

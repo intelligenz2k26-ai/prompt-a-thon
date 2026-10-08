@@ -129,24 +129,28 @@ class AdminController {
             if (!window.EscapeStorage || !window.EscapeStorage.isAdminLoggedIn()) return;
             isSyncing = true;
             try {
-                const prevIds = new Set(window.EscapeStorage.getParticipants().map(p => p.id));
+                const prevList = window.EscapeStorage.getParticipants();
+                const prevIds = new Set(prevList.map(p => p.id));
+                const prevSnapshot = JSON.stringify(prevList);
+
                 const fresh = await window.EscapeStorage.syncFromCloud();
                 const currentList = fresh || window.EscapeStorage.getParticipants();
                 const currentCount = currentList.length;
+                const currentSnapshot = JSON.stringify(currentList);
 
                 if (syncBadge) {
                     syncBadge.innerHTML = `<span class="sync-dot" style="background:#00ff88; box-shadow:0 0 8px #00ff88;"></span><span>LIVE SYNC ACTIVE (${currentCount})</span>`;
                 }
 
-                const newGuys = currentList.filter(p => !prevIds.has(p.id));
-                if (newGuys.length > 0) {
-                    if (window.escapeSound) window.escapeSound.unlock();
-                    const names = newGuys.map(p => `${p.name} (${p.id})`).join(', ');
-                    this.showToast(`⚡ New Registration: ${names}!`, 'green');
+                if (prevSnapshot !== currentSnapshot) {
+                    const newGuys = currentList.filter(p => !prevIds.has(p.id));
+                    if (newGuys.length > 0) {
+                        if (window.escapeSound) window.escapeSound.unlock();
+                        const names = newGuys.map(p => `${p.name} (${p.id})`).join(', ');
+                        this.showToast(`⚡ New Registration: ${names}!`, 'green');
+                    }
                     this.renderStats();
                     this.renderCurrentView();
-                } else {
-                    this.renderStats();
                 }
             } catch (err) {
                 if (syncBadge) {
